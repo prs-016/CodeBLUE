@@ -1,6 +1,6 @@
 # Implementation Plan - Project THRESHOLD (Code Blue)
 
-**Code Blue** is building **THRESHOLD**: The Bloomberg Terminal for Climate Aid. We are executing the full, uncompromised vision, integrating 18 unique datasets across ocean science, humanitarian ledgers, and financial infrastructure.
+**Code Blue** is building **THRESHOLD**: The Bloomberg Terminal for Climate Aid. We are executing the full, uncompromised vision, integrating 20 unique datasets and APIs across ocean science, humanitarian ledgers, and financial infrastructure.
 
 ---
 
@@ -9,8 +9,8 @@ THRESHOLD calculates a visceral "Days to Threshold" countdown for impending ecol
 
 ---
 
-## 1. The 18 Datasets & APIs (The Ingestion Layer)
-We will pipe the following 18 datasets through **Databricks** into **Snowflake**:
+## 1. The 20 Datasets & APIs (The Ingestion Layer)
+We will pipe the following 20 sources through **Databricks** into **Snowflake**:
 
 ### 🌊 Ocean Science (The Signal)
 1. **Keeling Curve (Atmospheric CO2)**: Scripps CSV dataset
@@ -32,13 +32,15 @@ We will pipe the following 18 datasets through **Databricks** into **Snowflake**
 13. **NASA/NOAA Press Releases**: Structured scientific announcements
 
 ### 🏥 Charity Verification (The Actors)
-14. **Charity Navigator API**: Charity financial health & transparency
-15. **ReliefWeb 3W Database**: Maps charities to operating regions
-16. **GiveWell Research Data**: Calculates "Impact Multipliers"
+14. **Charity Navigator API**: Charity financial health & transparency (Mega-charities).
+15. **GlobalGiving API**: The largest verified database of local, grassroots, and community-led NGOs operating in 175+ countries.
+16. **ReliefWeb 3W Database**: Maps charities to active operating regions.
+17. **GiveWell Research Data**: Calculates "Impact Multipliers".
 
 ### 🔗 Execution & Transparency (The Loop)
-17. **Stripe API**: Payment processing for the THRESHOLD FUND
-18. **Solana Blockchain**: On-chain public ledger transparency via Web3.js
+18. **Stripe API (Stripe Connect)**: Payment processing and fiat routing directly to global and localized NGO bank accounts.
+19. **Solana Blockchain (USDC)**: Direct wallet-to-wallet stablecoin transfers for rapid funding to grassroots charities, bypassing banking delays, with on-chain transparency via Web3.js.
+20. **Grassroots KYC Protocol**: A lightweight verification pipeline combining GlobalGiving and ReliefWeb data to onboard and fund community charities directly.
 
 ---
 
@@ -56,7 +58,7 @@ A premium, mission-control Next.js interface:
 - **War Room Globe**: A pulsing 3D visualization (Globe.gl) mapping risk nodes globally in real-time.
 - **Triage Queue**: A ranked table of global regions sorted by "Days to Threshold" and "Funding Gap."
 - **Historical Scrub**: Interactive D3.js timeline scrubbers analyzing true events (California Sardine Collapse, Great Barrier Reef Bleaching, Arabian Sea Dead Zone, Baltic Sea Hypoxia).
-- **Disbursement Ledger (THRESHOLD FUND)**: Stripe integration driving real Solana on-chain transactions to verified charities.
+- **Disbursement Ledger (THRESHOLD FUND)**: Stripe Connect and Solana USDC integration driving real, immediate transactions directly to mega-charities and localized grassroots community NGOs.
 
 ---
 
@@ -69,14 +71,14 @@ A premium, mission-control Next.js interface:
 | **LLM** | Google Gemini 1.5 Pro/Flash |
 | **Database** | Snowflake (Full Data Warehousing) |
 | **Data Flow** | Databricks (Ingestion, Normalization, Feature Engineering) |
-| **Web3 / Pay** | True Solana Smart Contracts/Ledger & Stripe Payment API |
+| **Web3 / Pay** | True Solana Smart Contracts/Ledger, Stripe Connect API, & Direct USDC Wallet Routing |
 
 ---
 
 ## Execution Roadmap for Subagents
-1. **API Keys & Devnet**: Secure keys for NewsAPI, Gemini, Stripe, Charity Navigator, ReliefWeb, and prepare a Solana Devnet wallet.
-2. **Databricks Pipelines**: Ingest all 18 sources into Delta Tables.
+1. **API Keys & Devnet**: Secure keys for NewsAPI, Gemini, Stripe, Charity Navigator, GlobalGiving, ReliefWeb, and prepare a Solana Devnet wallet.
+2. **Databricks Pipelines**: Ingest all 20 sources into Delta Tables.
 3. **Snowflake Feature Store**: Join tables mapping Scripps indicators globally against World Bank financial data.
 4. **ML Training**: Build the XGBoost, Prophet, and Regression models.
-5. **Backend Assembly**: Complete the FastAPI endpoints for all features.
-6. **Next.js UI & Web3**: Build the Globe, the Triage Table, the D3 Scrubbers, and finalize the Stripe-to-Solana fund transfer loop.
+5. **Backend Assembly**: Complete the FastAPI endpoints for all features, including the localized charity payment routing logic.
+6. **Next.js UI & Web3**: Build the Globe, the Triage Table, the D3 Scrubbers, and finalize the Stripe/USDC direct payout transfers to local NGOs.
