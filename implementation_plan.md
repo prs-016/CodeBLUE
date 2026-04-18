@@ -1,64 +1,9 @@
 # Implementation Plan - Project THRESHOLD (Code Blue)
 
-**Code Blue** is building **THRESHOLD**: The Bloomberg Terminal for Climate Aid. We are executing the full, uncompromised vision, integrating 20 unique datasets and APIs across ocean science, humanitarian ledgers, and financial infrastructure.
-
----
+**Code Blue** is building **THRESHOLD**: The Bloomberg Terminal for Climate Aid. 
 
 ## The Core Concept
 THRESHOLD calculates a visceral "Days to Threshold" countdown for impending ecological disasters by piping oceanographic warning signals into machine learning models. It exposes the gap between actual risk and committed funding, and provides a direct, blockchain-verifiable conduit to trigger fund deployments to verified NGOs before the window closes.
-
----
-
-## 1. The 20 Datasets & APIs (The Ingestion Layer)
-We will pipe the following 20 sources through **Databricks** into **Snowflake** (Code lives in `threshold/data/`):
-
-### 🌊 Ocean Science (The Signal)
-1. **Keeling Curve (Atmospheric CO2)**: Scripps CSV dataset
-2. **CalCOFI (Ocean Metrics)**: Temperature, salinity, oxygen
-3. **Scripps Pier Observatory**: Real-time coastal sensors
-4. **NOAA ERDDAP**: Global Sea Surface Temperature anomalies
-5. **NOAA Coral Reef Watch**: Bleaching alert levels
-6. **NASA Ocean Color**: Hypoxic dead zone tracking
-
-### 💰 Humanitarian & Financial (The Gap)
-7. **OCHA Financial Tracking System (FTS)**: Tracks every humanitarian donation worldwide
-8. **HDX (Humanitarian Data Exchange)**: People in Need vs Funds Required
-9. **World Bank Climate Disaster Data**: Economic impact of past disasters (Counterfactuals)
-10. **EM-DAT**: Historical disaster database (Deaths & Loss)
-
-### 📰 Media & News (The Buzz)
-11. **ReliefWeb**: UN humanitarian situation reports
-12. **GDELT Project**: Real-time news media attention
-13. **NASA/NOAA Press Releases**: Structured scientific announcements
-
-### 🏥 Charity Verification (The Actors)
-14. **Charity Navigator API**: Charity financial health & transparency (Mega-charities).
-15. **GlobalGiving API**: The largest verified database of local, grassroots, and community-led NGOs.
-16. **ReliefWeb 3W Database**: Maps charities to active operating regions.
-17. **GiveWell Research Data**: Calculates "Impact Multipliers".
-
-### 🔗 Execution & Transparency (The Loop)
-18. **Stripe API (Stripe Connect)**: Payment processing and fiat routing directly to global and localized NGO bank accounts.
-19. **Solana Blockchain (USDC)**: Direct wallet-to-wallet stablecoin transfers for rapid funding to grassroots charities, bypassing banking delays, with on-chain transparency via Web3.js.
-20. **Grassroots KYC Protocol**: A lightweight verification pipeline combining GlobalGiving and ReliefWeb data to onboard and fund community charities directly.
-
----
-
-## 2. The THRESHOLD Engine (The "Brain")
-Our Intelligence layer avoids simplifications and runs 3 live Python models + LLM integration (Code lives in `threshold/ml/`):
-1. **Tipping Point Classifier**: XGBoost model trained on CalCOFI data to output a Threshold Proximity Score (0–10).
-2. **Days to Threshold (DTT) Forecaster**: Facebook Prophet/LSTM time-series model projecting the exact crossing date.
-3. **Counterfactual Engine**: SciKit-Learn Regression model mapping EM-DAT damage costs to early Scripps indicators to show the cost of waiting.
-4. **Crisis Auditor (Gemini 1.5)**: Feed GDELT and ReliefWeb articles into Google Gemini 1.5 Flash to extract structured JSON sentiment summaries.
-
----
-
-## 3. The "Code Blue" Dashboard (The "UI")
-A premium, mission-control interface built on React & Vite (Code lives in `threshold/frontend/`):
-- **War Room Globe**: A pulsing 3D visualization (Globe.gl) mapping risk nodes globally in real-time.
-- **Triage Queue**: A ranked list of all monitored regions globally, sorted by "Days to Threshold" and "Funding Gap."
-- **Historical Scrub**: Interactive D3.js timeline scrubbers analyzing true events.
-- **Disbursement Ledger (THRESHOLD FUND)**: Stripe Connect and Solana USDC integration driving real, immediate transactions directly to mega-charities and localized grassroots community NGOs.
 
 ---
 
@@ -67,18 +12,49 @@ A premium, mission-control interface built on React & Vite (Code lives in `thres
 | Layer | Technology |
 | :--- | :--- |
 | **Frontend** | React, Vite, Tailwind CSS, Globe.gl, D3.js |
-| **Backend** | Python (FastAPI) |
-| **LLM** | Google Gemini 1.5 Pro/Flash |
-| **Database** | Snowflake (Full Data Warehousing) |
-| **Data Flow** | Databricks (Ingestion, Normalization, Feature Engineering) |
-| **Web3 / Pay** | True Solana Smart Contracts/Ledger, Stripe Connect API, & Direct USDC Wallet Routing |
+| **Backend** | Python (FastAPI), SQLAlchemy (SQLite for Hackathon) |
+| **Machine Learning** | XGBoost, Prophet/LSTM, SciKit-Learn Regression, Marimo Notebooks |
+| **Data Ingestion** | Python Async scripts writing to SQLite |
+| **Web3 / Pay** | True Solana Smart Contracts/Ledger & Stripe Payment API |
 
 ---
 
-## Execution Roadmap
-1. **API Keys & Devnet**: Secure keys for APIs and prepare Solana Devnet.
-2. **Databricks Pipelines**: Ingest all 20 sources into Delta Tables (`threshold/data/`).
-3. **Snowflake Feature Store**: Join tables mapping Scripps indicators globally.
-4. **ML Training**: Build the XGBoost, Prophet, and Regression models (`threshold/ml/`).
-5. **Backend Assembly**: Complete the FastAPI endpoints (`threshold/backend/`).
-6. **React UI & Web3**: Build the Globe, Triage Table, and complete the Stripe/USDC payout transfers (`threshold/frontend/` & `threshold/blockchain/`).
+## Folder Structure (`threshold/`)
+The platform uses the following highly decoupled structure to allow 11 parallel sub-agents to build the modules simultaneously:
+
+- `data/`
+  - `ingestion/`: 12 distinct data extractors (Keeling Curve, CalCOFI, NOAA, ReliefWeb, etc.)
+  - `processing/`: Feature engineering, aggregation, funding gap calculation
+  - `schemas/`: SQLite SQL table definitions
+  - `seed/`: Synthetic data generator `generate_synthetic.py`
+- `ml/`
+  - `models/`: Tipping point, Forecaster, Counterfactual estimators
+  - `notebooks/`: Marimo analysis notebooks
+- `backend/`
+  - `routers/`: 7 FastAPI routers (regions, triage, funding, news, counterfactual, charities, fund)
+  - `services/`: Stripe, Solana, ML, ReliefWeb, GDELT integrations
+- `frontend/`
+  - `src/components/`: Modular React components grouped by functionality (Globe, Triage, RegionBrief, Counterfactual, FundingGap, Fund)
+- `blockchain/`
+  - `programs/`: Solana Rust smart contracts (`threshold_fund`)
+- `docs/`
+  - Sphinx configuration
+
+---
+
+## Execution Logic (The 11 Sub-Agents)
+The swarm is divided into 11 specialized autonomous agents:
+1. **Sub-Agent 1 (Data Ingestion)**: Extracts datasets into a local SQLite mirror.
+2. **Sub-Agent 2 (Feature Engineering)**: Aggregates signals into the 8 core THRESHOLD regions.
+3. **Sub-Agent 3 (ML Models)**: Builds the XGBoost classifier, Prophet forecaster, and Counterfactual estimator.
+4. **Sub-Agent 4 (FastAPI Backend)**: Manages all `backend/routers/` and services.
+5. **Sub-Agent 5 (Frontend Globe)**: Builds the `Globe.gl` dark-mode landing page and core UI shell.
+6. **Sub-Agent 6 (Frontend Triage)**: Builds `TriageQueue` and the comprehensive `RegionBrief` dashboards.
+7. **Sub-Agent 7 (Frontend Counterfactual & Radar)**: Builds the D3 TimelineScrubber and FundingGapRadar.
+8. **Sub-Agent 8 (Frontend Funding)**: Builds the Stripe checkout and Donation modals.
+9. **Sub-Agent 9 (Blockchain)**: Deploys the Solana instructions tracking impact.
+10. **Sub-Agent 10 (Synthetic Data)**: Engineers the flawless hackathon demo seed script.
+11. **Sub-Agent 11 (DevOps/Integration)**: Manages `docker-compose.yml` and stitches the swarm's code into one unified app.
+
+> [!IMPORTANT]
+> The orchestrator rule is strict: **Do not build anything sequentially that can be built in parallel.** All dependencies are mocked via schemas until the final Step 1-5 Integration Phase.

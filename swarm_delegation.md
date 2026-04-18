@@ -1,107 +1,81 @@
 # Swarm Agent Delegation Manifest
 
-This document maps the **20 AI Subagents** to their explicit operational tracks to build the THRESHOLD platform simultaneously. By dividing the 20-dataset architecture into atomic units, the swarm can execute the massive roadmap in 48 hours.
+This document maps the **11 AI Sub-Agents** to their explicit operational tracks based on the Code Blue master prompt. All sub-agents work seamlessly in parallel, depending only on defined data schemas until the final integration phase.
 
 ---
 
-## 🗄️ DATA ENGINEERING LAYER (Agents 01-04) - Located in `threshold/data/`
+### SUB-AGENT 1 — Data Ingestion Pipeline
+**Directory:** `threshold/data/ingestion/`
+**Directive:** Build every data ingestion script. Fetch, normalize, and save to SQLite.
+- `keeling_curve.py` (CO2 ppm)
+- `calcofi.py` (Ocean Metrics)
+- `noaa_sst.py` (SST Anomalies)
+- `coral_reef_watch.py` (DHW Alert Levels)
+- `ocha_fts.py` (Humanitarian Funding)
+- `reliefweb.py` (Situation Reports)
+- `gdelt.py` (Media Attention Scores)
+- `emdat.py` (Historical Disasters)
+- `charity_navigator.py` (Verified NGO Data)
 
-### `Agent 01` (Scripps Data Architect)
-**Directive:** You own the core oceanographic signals.
-- **Task:** Build Python/PySpark scripts to ingest the **CalCOFI CSV**, **Keeling Curve CO2** data, and the **Scripps Pier** live feed in `threshold/data/ingestion/`.
+### SUB-AGENT 2 — Feature Engineering & Aggregation
+**Directory:** `threshold/data/processing/`
+**Directive:** Build the transformation layer producing the ML-ready feature store for the 8 core THRESHOLD regions.
+- `feature_engineering.py`: Normalizes 7d/30d/90d rolling windows.
+- `regional_aggregator.py`: Handles proxy interpolations.
+- `funding_gap_calculator.py`: Computes funding and coverage gaps.
+- `media_attention_scorer.py`: Computes crisis vs. media attention gap.
 
-### `Agent 02` (NOAA/NASA Data Architect)
-**Directive:** You own global remote sensing signals.
-- **Task:** Connect to the **NOAA ERDDAP API**, **NOAA Coral Reef Watch REST API**, and **NASA Ocean Color OPeNDAP**.
+### SUB-AGENT 3 — ML Models & Notebooks
+**Directory:** `threshold/ml/`
+**Directive:** Build the 3 ML models and beautiful Marimo notebooks.
+- `tipping_point_classifier.py` (XGBoost Regressor)
+- `days_to_threshold_forecaster.py` (Facebook Prophet + LSTM Ensemble)
+- `counterfactual_cost_estimator.py` (SciKit-Learn Regression mapped to EM-DAT)
+- `notebooks/`: Marimo data exploration files for judges (`tipping_point_analysis.py`).
 
-### `Agent 03` (Humanitarian Data Architect)
-**Directive:** You own the historical and financial disaster facts.
-- **Task:** Connect to the **OCHA FTS API**, **HDX API**, **World Bank CSVs**, and **EM-DAT** datasets.
+### SUB-AGENT 4 — FastAPI Backend
+**Directory:** `threshold/backend/`
+**Directive:** Build the full API with realistic mocking schemas.
+- **Routers:** `/regions`, `/triage`, `/funding`, `/news`, `/counterfactual`, `/charities`, `/fund`.
+- **Services:** `ml_service.py`, `stripe_service.py`, `solana_service.py`.
 
-### `Agent 04` (Snowflake Warehouse Lead)
-**Directive:** You bridge Databricks to the rest of the application.
-- **Task:** Establish the Snowflake connection. Design the final relational schema for the FastAPI backend and ML models to query.
+### SUB-AGENT 5 — Frontend: Globe & Navigation
+**Directory:** `threshold/frontend/`
+**Directive:** Build the `WarRoomGlobe.jsx` landing page.
+- Colorize regions from Teal to Pulsing Red based on `threshold_proximity_score`.
+- Immersive dark-navy UI with JetBrains Mono numbers.
 
----
+### SUB-AGENT 6 — Frontend: Triage Queue & Region Brief
+**Directory:** `threshold/frontend/`
+**Directive:** Build the core analytical React components.
+- `TriageQueue.jsx`: Sortable emergency tables.
+- `RegionBrief.jsx`: D3.js line charts for stress signals (`StressSignalDashboard.jsx`) and branching futures (`BranchingPaths.jsx`).
 
-## 🧠 INTELLIGENCE & ML LAYER (Agents 05-08) - Located in `threshold/ml/`
+### SUB-AGENT 7 — Frontend: Counterfactuals & Radar
+**Directory:** `threshold/frontend/`
+**Directive:** Build the high-complexity D3.js visualizations.
+- `TimelineScrubber.jsx`: Interactive historical scrubber computing real-time late-recovery cost multipliers.
+- `FundingGapRadar.jsx`: Force-directed bubble chart marking "OVERFUNDED" vs "DANGER ZONE".
 
-### `Agent 05` (Lead Applied Scientist - Classifier)
-**Directive:** Build the Threshold Proximity Score.
-- **Task:** Train an **XGBoost Classifier** in `threshold/ml/models/tipping_point_classifier.py` to detect signatures that precede an ecological collapse.
+### SUB-AGENT 8 — Frontend: THRESHOLD FUND
+**Directory:** `threshold/frontend/`
+**Directive:** Build the transparent stripe payment loop.
+- `FundDashboard.jsx`: Active funding rounds.
+- `DonationModal.jsx`: Stripe Elements integration with live impact calculators ("$50 = 2.3 hectares of reef protected").
 
-### `Agent 06` (Time-Series Scientist - Forecaster)
-**Directive:** Build the Countdown.
-- **Task:** Train a **Prophet / LSTM** model on historical trends to predict the exact "Days to Threshold" crossing date.
+### SUB-AGENT 9 — Blockchain: Solana Smart Contract
+**Directory:** `threshold/blockchain/`
+**Directive:** Write the Rust smart contract logic.
+- `settings` / `lib.rs`: Solana instructions for `record_contribution`, `disburse_tranche`, `record_impact`.
+- `client/interact.js`: Web3 connections for FastAPI backend.
 
-### `Agent 07` (Econometrics Scientist - Counterfactuals)
-**Directive:** Build the cost model.
-- **Task:** Use **SciKit-Learn Regression** mapped against EM-DAT data to calculate the dollar cost of "Late Recovery" vs. "Early Intervention".
+### SUB-AGENT 10 — Data: Synthetic Generator
+**Directory:** `threshold/data/seed/`
+**Directive:** Engineer the exact deterministic dataset for the hackathon deployment.
+- `generate_synthetic.py`: Must load Great Barrier Reef with `current_score: 8.4`, `CRITICAL` status for the demo impact and immediately simulate 10 years of oceanographic/NGO metrics.
 
-### `Agent 08` (LLM Engineer - The Crisis Auditor)
-**Directive:** You own the semantic text analysis.
-- **Task:** Route the **ReliefWeb** and **GDELT** feeds into **Google Gemini 1.5 Flash** for sentiment analysis comparing crisis severity against media excitement.
-
----
-
-## ⚙️ BACKEND & CLOUD LAYER (Agents 09-12) - Located in `threshold/backend/`
-
-### `Agent 09` (Backend Lead - FastAPI Core)
-**Directive:** Stand up the backend infrastructure.
-- **Task:** Maintain the Python FastAPI server in `threshold/backend/main.py`. Setup CORS, routing context, database connections (`database.py`), and configuration (`config.py`).
-
-### `Agent 10` (API Developer - Region Triage)
-**Directive:** Serve the core ML data.
-- **Task:** Build `<GET> /api/regions` mapping to `routers/regions.py` and implement the triage logic in `routers/triage.py`.
-
-### `Agent 11` (API Developer - Charity Verification)
-**Directive:** Identify the actors.
-- **Task:** Build the API pipelines connecting to **Charity Navigator**, **GlobalGiving**, and **ReliefWeb 3W** in `routers/charities.py`.
-
-### `Agent 12` (API Developer - News & NLP Stream)
-**Directive:** Serve the news feeds.
-- **Task:** Create logic in `routers/news.py` to stream structured Gemini sentiment and media news headlines. Also manage the counterfactual endpoint logic in `routers/counterfactual.py`.
-
----
-
-## 💸 WEB3 & PAYMENTS LAYER (Agents 13-15) - Located in `threshold/blockchain/` & `threshold/backend/`
-
-### `Agent 13` (Web3 Dev - Solana Payouts)
-**Directive:** Handle crypto routing.
-- **Task:** Maintain the compiled Rust smart contracts in `threshold/blockchain/programs/threshold_fund/src/lib.rs` and the Node interaction script at `threshold/blockchain/client/interact.js`.
-
-### `Agent 14` (FinTech Dev - Stripe Routing)
-**Directive:** Handle traditional fiat routing.
-- **Task:** Integrate the **Stripe Connect API** in `threshold/backend/routers/fund.py` to allow users to "Fund" a threshold gap directly.
-
-### `Agent 15` (Compliance Dev - Grassroots KYC)
-**Directive:** Ensure local funds don't go to bad actors.
-- **Task:** Build the **Grassroots KYC Protocol** logic in `routers/funding.py` and `charities.py`, comparing GlobalGiving data against local operational tags.
-
----
-
-## 🖥️ FRONTEND LAYER (Agents 16-19) - Located in `threshold/frontend/`
-
-### `Agent 16` (Frontend Lead - React/Vite Core)
-**Directive:** Establish the War Room layout.
-- **Task:** Maintain the Vite/React app logic in `threshold/frontend/src/App.jsx`. Manage **Tailwind CSS** configurations and routing pages (`Home.jsx`, `FundPage.jsx`, etc.).
-
-### `Agent 17` (WebGL Engineer - The Globe)
-**Directive:** Build the Hackathon "Wow" Factor.
-- **Task:** Implement `WarRoomGlobe.jsx`, mapping pulsing, color-coded spikes based on the "Threshold Proximity Score." 
-
-### `Agent 18` (Data Viz Engineer - Dashboard & Scrubbers)
-**Directive:** Tell the story.
-- **Task:** Build the `TriageQueue.jsx` components and the `FundingGapRadar.jsx` interactive visualizations using D3/Recharts.
-
-### `Agent 19` (Frontend Dev - Payments UI)
-**Directive:** Close the loop.
-- **Task:** Build the `FundDashboard.jsx` UI. Handle the Stripe Checkout UI redirects and the live ledger showing Solana transaction hashes.
-
----
-
-## 🚀 DEVOPS & INTEGRATION (Agent 20) - Located in `threshold/` ROOT
-
-### `Agent 20` (DevOps Lead)
-**Directive:** Keep the swarm online and deployed.
-- **Task:** Manage `threshold/docker-compose.yml`, write any GitHub Actions, and deploy the entire multi-container stack. Keep everything highly available for hackathon judging.
+### SUB-AGENT 11 — DevOps & Integration
+**Directory:** `threshold/`
+**Directive:** Connect the swarm's work into `docker-compose.yml`.
+- Execute all integration step validations (e.g., `frontend/src/utils/api.js`).
+- Manage deployment scripts and `docker-compose up` flow so judges can spin up the full 5-container stack instantly.
