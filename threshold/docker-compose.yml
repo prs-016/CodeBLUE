@@ -4,14 +4,10 @@ services:
       context: ./backend
     ports: 
       - "8000:8000"
-    environment:
-      - DATABASE_URL=sqlite:///./threshold.db
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - SOLANA_RPC_URL=https://api.devnet.solana.com
-      - SNOWFLAKE_USER=${SNOWFLAKE_USER}
-      - SNOWFLAKE_PASSWORD=${SNOWFLAKE_PASSWORD}
-      - SNOWFLAKE_ACCOUNT=${SNOWFLAKE_ACCOUNT}
+    env_file:
+      - .env
     volumes:
+      - ./backend:/app
       - ./data:/app/data
       - ./ml/saved_models:/app/models
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload

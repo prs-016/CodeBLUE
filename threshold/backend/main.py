@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .config import settings
-from .routers import regions, triage, funding, counterfactual, news, charities, fund
+from config import settings
+from routers import regions, triage, funding, counterfactual, news, charities, fund
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
