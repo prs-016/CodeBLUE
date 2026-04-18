@@ -1,0 +1,84 @@
+# Implementation Plan - Project THRESHOLD (Code Blue)
+
+**Code Blue** is building **THRESHOLD**: The Bloomberg Terminal for Climate Aid. We are executing the full, uncompromised vision, integrating 20 unique datasets and APIs across ocean science, humanitarian ledgers, and financial infrastructure.
+
+---
+
+## The Core Concept
+THRESHOLD calculates a visceral "Days to Threshold" countdown for impending ecological disasters by piping oceanographic warning signals into machine learning models. It exposes the gap between actual risk and committed funding, and provides a direct, blockchain-verifiable conduit to trigger fund deployments to verified NGOs before the window closes.
+
+---
+
+## 1. The 20 Datasets & APIs (The Ingestion Layer)
+We will pipe the following 20 sources through **Databricks** into **Snowflake** (Code lives in `threshold/data/`):
+
+### 🌊 Ocean Science (The Signal)
+1. **Keeling Curve (Atmospheric CO2)**: Scripps CSV dataset
+2. **CalCOFI (Ocean Metrics)**: Temperature, salinity, oxygen
+3. **Scripps Pier Observatory**: Real-time coastal sensors
+4. **NOAA ERDDAP**: Global Sea Surface Temperature anomalies
+5. **NOAA Coral Reef Watch**: Bleaching alert levels
+6. **NASA Ocean Color**: Hypoxic dead zone tracking
+
+### 💰 Humanitarian & Financial (The Gap)
+7. **OCHA Financial Tracking System (FTS)**: Tracks every humanitarian donation worldwide
+8. **HDX (Humanitarian Data Exchange)**: People in Need vs Funds Required
+9. **World Bank Climate Disaster Data**: Economic impact of past disasters (Counterfactuals)
+10. **EM-DAT**: Historical disaster database (Deaths & Loss)
+
+### 📰 Media & News (The Buzz)
+11. **ReliefWeb**: UN humanitarian situation reports
+12. **GDELT Project**: Real-time news media attention
+13. **NASA/NOAA Press Releases**: Structured scientific announcements
+
+### 🏥 Charity Verification (The Actors)
+14. **Charity Navigator API**: Charity financial health & transparency (Mega-charities).
+15. **GlobalGiving API**: The largest verified database of local, grassroots, and community-led NGOs.
+16. **ReliefWeb 3W Database**: Maps charities to active operating regions.
+17. **GiveWell Research Data**: Calculates "Impact Multipliers".
+
+### 🔗 Execution & Transparency (The Loop)
+18. **Stripe API (Stripe Connect)**: Payment processing and fiat routing directly to global and localized NGO bank accounts.
+19. **Solana Blockchain (USDC)**: Direct wallet-to-wallet stablecoin transfers for rapid funding to grassroots charities, bypassing banking delays, with on-chain transparency via Web3.js.
+20. **Grassroots KYC Protocol**: A lightweight verification pipeline combining GlobalGiving and ReliefWeb data to onboard and fund community charities directly.
+
+---
+
+## 2. The THRESHOLD Engine (The "Brain")
+Our Intelligence layer avoids simplifications and runs 3 live Python models + LLM integration (Code lives in `threshold/ml/`):
+1. **Tipping Point Classifier**: XGBoost model trained on CalCOFI data to output a Threshold Proximity Score (0–10).
+2. **Days to Threshold (DTT) Forecaster**: Facebook Prophet/LSTM time-series model projecting the exact crossing date.
+3. **Counterfactual Engine**: SciKit-Learn Regression model mapping EM-DAT damage costs to early Scripps indicators to show the cost of waiting.
+4. **Crisis Auditor (Gemini 1.5)**: Feed GDELT and ReliefWeb articles into Google Gemini 1.5 Flash to extract structured JSON sentiment summaries.
+
+---
+
+## 3. The "Code Blue" Dashboard (The "UI")
+A premium, mission-control interface built on React & Vite (Code lives in `threshold/frontend/`):
+- **War Room Globe**: A pulsing 3D visualization (Globe.gl) mapping risk nodes globally in real-time.
+- **Triage Queue**: A ranked list of all monitored regions globally, sorted by "Days to Threshold" and "Funding Gap."
+- **Historical Scrub**: Interactive D3.js timeline scrubbers analyzing true events.
+- **Disbursement Ledger (THRESHOLD FUND)**: Stripe Connect and Solana USDC integration driving real, immediate transactions directly to mega-charities and localized grassroots community NGOs.
+
+---
+
+## Technical Stack Architecture
+
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | React, Vite, Tailwind CSS, Globe.gl, D3.js |
+| **Backend** | Python (FastAPI) |
+| **LLM** | Google Gemini 1.5 Pro/Flash |
+| **Database** | Snowflake (Full Data Warehousing) |
+| **Data Flow** | Databricks (Ingestion, Normalization, Feature Engineering) |
+| **Web3 / Pay** | True Solana Smart Contracts/Ledger, Stripe Connect API, & Direct USDC Wallet Routing |
+
+---
+
+## Execution Roadmap
+1. **API Keys & Devnet**: Secure keys for APIs and prepare Solana Devnet.
+2. **Databricks Pipelines**: Ingest all 20 sources into Delta Tables (`threshold/data/`).
+3. **Snowflake Feature Store**: Join tables mapping Scripps indicators globally.
+4. **ML Training**: Build the XGBoost, Prophet, and Regression models (`threshold/ml/`).
+5. **Backend Assembly**: Complete the FastAPI endpoints (`threshold/backend/`).
+6. **React UI & Web3**: Build the Globe, Triage Table, and complete the Stripe/USDC payout transfers (`threshold/frontend/` & `threshold/blockchain/`).
