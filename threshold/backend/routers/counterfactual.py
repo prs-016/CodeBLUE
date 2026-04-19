@@ -48,23 +48,6 @@ def get_case(case_id: str, db: Session = Depends(get_db)) -> CounterfactualCaseD
         raise HTTPException(status_code=404, detail="Case study not found")
 
     case = dict(row._mapping)
-    case["timeline"] = [
-        {
-            "date": case.get("early_warning_date") or f"{case['year_crossed'] - 2}-01-01",
-            "event": "Early warning detected",
-            "score": 5.1,
-        },
-        {
-            "date": f"{case['year_crossed']}-01-01",
-            "event": "Intervention window closing",
-            "score": 7.8,
-        },
-        {
-            "date": case.get("threshold_crossed_date") or f"{case['year_crossed']}-06-01",
-            "event": "Threshold crossed",
-            "score": 10.0,
-        },
-    ]
     return CounterfactualCaseDetail(**case)
 
 

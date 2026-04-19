@@ -40,7 +40,6 @@ export default function Home() {
         <div className="left-0 max-w-xl font-sans tracking-widest flex flex-col items-start">
            <h1 className="mb-2 text-4xl font-bold text-teal-light">THRESHOLD</h1>
            <p className="text-xl uppercase tracking-[0.2em] text-grey-mid">Climate Crisis Intelligence</p>
-           <p className="mt-4 text-xs text-grey-dark mix-blend-screen">KEELING CURVE TODAY: 422.1 PPM (fallback demo reading)</p>
         </div>
       </div>
     </div>
