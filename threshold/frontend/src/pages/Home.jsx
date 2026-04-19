@@ -1,10 +1,12 @@
-import { Activity } from "lucide-react";
+import { Activity, Sun, Moon } from "lucide-react";
+import React, { useState } from "react";
 
 import WarRoomGlobe from "../components/Globe/WarRoomGlobe";
 import { useRegions } from "../hooks";
 
 export default function Home() {
   const { regions } = useRegions();
+  const [theme, setTheme] = useState("night");
   const critical = [...regions].sort((a, b) => (b.threshold_proximity_score || 0) - (a.threshold_proximity_score || 0))[0];
 
   return (
@@ -15,7 +17,7 @@ export default function Home() {
 
       {/* 3D GLOBE OVERLAY */}
       <div className="absolute inset-0 z-10 cursor-grab active:cursor-grabbing">
-         <WarRoomGlobe regions={regions} />
+         <WarRoomGlobe regions={regions} theme={theme} />
       </div>
 
       {/* OVERLAY UIs */}
@@ -35,10 +37,21 @@ export default function Home() {
           <div className="text-sm text-grey-mid mt-1">UNTIL INTERVENTION WINDOW CLOSES</div>
         </div>
 
-        {/* Bottom Title */}
-        <div className="left-0 max-w-xl font-sans tracking-widest">
+        {/* Bottom Title & Theme Toggle */}
+        <div className="left-0 max-w-xl font-sans tracking-widest flex flex-col items-start">
            <h1 className="mb-2 text-4xl font-bold text-teal-light">THRESHOLD</h1>
            <p className="text-xl uppercase tracking-[0.2em] text-grey-mid">Climate Crisis Intelligence</p>
+           
+           <button 
+             onClick={() => setTheme(t => t === "night" ? "day" : "night")}
+             className="pointer-events-auto mt-6 flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs uppercase tracking-widest text-white backdrop-blur-md transition hover:bg-white/10 hover:border-white/40"
+           >
+             {theme === "night" ? (
+               <><Sun className="w-4 h-4 text-orange" /> Switch to Day Mode</>
+             ) : (
+               <><Moon className="w-4 h-4 text-teal-light" /> Switch to Night Mode</>
+             )}
+           </button>
            <p className="mt-4 text-xs text-grey-dark mix-blend-screen">KEELING CURVE TODAY: 422.1 PPM (fallback demo reading)</p>
         </div>
       </div>

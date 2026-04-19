@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import RiskCard from "../RiskCard/RiskCard";
 import { useRiskAssessment } from "../../hooks/useRiskAssessment";
 
-export default function WarRoomGlobe({ regions }) {
+export default function WarRoomGlobe({ regions, theme = "night" }) {
   const globeRef = useRef();
   const containerRef = useRef();
   const navigate = useNavigate();
@@ -15,16 +15,46 @@ export default function WarRoomGlobe({ regions }) {
     import("globe.gl").then((GlobePkg) => {
       const Globe = GlobePkg.default || GlobePkg;
 
-      const globe = Globe()(containerRef.current)
-        .globeImageUrl("//unpkg.com/three-globe/example/img/earth-dark.jpg")
-        .backgroundColor("#0A1628")
-        .showAtmosphere(true)
-        .atmosphereColor("#14BDAC")
-        .atmosphereAltitude(0.15);
+      const applyTheme = (g, t) => {
+        if (t === "day") {
+          g.globeImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg")
+           .backgroundImageUrl(null)
+           .atmosphereColor("#87CEEB")
+           .atmosphereAltitude(0.15)
+           .hexPolygonColor(() => "rgba(0,0,0,0.1)");
+        } else {
+          g.globeImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-dark.jpg")
+           .backgroundImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/night-sky.png")
+           .atmosphereColor("#0A84FF")
+           .atmosphereAltitude(0.25)
+           .hexPolygonColor(() => "rgba(255,255,255,0.02)");
+        }
+      };
 
-      globe.pointOfView({ lat: 20, lng: 0, altitude: 2.5 });
+      const globe = Globe()(containerRef.current)
+        .bumpImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-topology.png")
+        .backgroundColor("rgba(10,22,40,0)") // transparent to blead into the UI
+        .showAtmosphere(true)
+        .hexPolygonResolution(3)
+        .hexPolygonMargin(0.6)
+        .arcDashLength(0.4)
+        .arcDashGap(0.2)
+        .arcDashInitialGap(() => Math.random())
+        .arcDashAnimateTime(2000)
+        .arcColor('color')
+        .arcStroke('stroke');
+
+      // Add cyber-military hex grid overlay for countries
+      fetch('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/dataset/ne_110m_admin_0_countries.geojson')
+        .then(res => res.json())
+        .then(countries => {
+          globe.hexPolygonsData(countries.features)
+               .hexPolygonTransitionDuration(1000);
+        }).catch(() => {});
+
+      globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 });
       globe.controls().autoRotate = true;
-      globe.controls().autoRotateSpeed = 0.5;
+      globe.controls().autoRotateSpeed = 1.2;
 
       // Click on empty globe space → trigger risk assessment pipeline
       globe.onGlobeClick(({ lat, lng }) => {
@@ -32,13 +62,35 @@ export default function WarRoomGlobe({ regions }) {
         assess(lat, lng);
       });
 
+      // Apply initial theme dynamically to fix the empty stars/texture bug
+      applyTheme(globe, theme);
+
       globeRef.current = globe;
     }).catch(console.error);
 
     return () => {
-      containerRef.current.innerHTML = "";
+      if (containerRef.current) containerRef.current.innerHTML = "";
     };
   }, []);
+
+  // Theme switcher
+  useEffect(() => {
+    if (!globeRef.current) return;
+    const g = globeRef.current;
+    if (theme === "day") {
+      g.globeImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg")
+       .backgroundImageUrl(null) 
+       .atmosphereColor("#87CEEB")
+       .atmosphereAltitude(0.15)
+       .hexPolygonColor(() => "rgba(0,0,0,0.1)");
+    } else {
+      g.globeImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-dark.jpg")
+       .backgroundImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/night-sky.png")
+       .atmosphereColor("#0A84FF")
+       .atmosphereAltitude(0.25)
+       .hexPolygonColor(() => "rgba(255,255,255,0.02)");
+    }
+  }, [theme]);
 
   // Separate effect so assess reference doesn't recreate the globe
   useEffect(() => {
@@ -53,16 +105,32 @@ export default function WarRoomGlobe({ regions }) {
     if (!globeRef.current || !regions || regions.length === 0) return;
     const globe = globeRef.current;
 
+    // Rings indicating active stress zones
     const ringData = regions.map((r) => ({
       lat: r.lat,
       lng: r.lon,
-      maxR: Math.max(5, (r.threshold_proximity_score || 0) * 1.5),
-      propagationSpeed: (r.threshold_proximity_score || 0) > 7 ? 2.5 : 1,
-      repeatPeriod: (r.threshold_proximity_score || 0) > 7 ? 600 : 1500,
-      color: getColor(r.threshold_proximity_score || 0),
+      maxR: Math.max(8, (r.threshold_proximity_score || 0) * 2.2),
+      propagationSpeed: (r.threshold_proximity_score || 0) > 7 ? 3.5 : 1.2,
+      repeatPeriod: (r.threshold_proximity_score || 0) > 7 ? 400 : 1200,
+      color: getColor(r.threshold_proximity_score || 0, r.primary_threat),
       label: r.name,
       ...r,
     }));
+
+    // Draw arcs cascading from the most critical region to all others
+    const sorted = [...regions].sort((a,b) => (b.threshold_proximity_score||0) - (a.threshold_proximity_score||0));
+    const critical = sorted[0];
+    let arcData = [];
+    if (critical && regions.length > 1) {
+      arcData = regions.filter(r => r.id !== critical.id).map(r => ({
+        startLat: critical.lat,
+        startLng: critical.lon,
+        endLat: r.lat,
+        endLng: r.lon,
+        color: ['rgba(230, 126, 34, 0.8)', 'rgba(20, 189, 172, 0.1)'],
+        stroke: 0.3 + ((r.threshold_proximity_score||0) * 0.05)
+      }));
+    }
 
     globe
       .ringsData(ringData)
@@ -71,47 +139,81 @@ export default function WarRoomGlobe({ regions }) {
       .ringPropagationSpeed((d) => d.propagationSpeed)
       .ringRepeatPeriod((d) => d.repeatPeriod)
       .onRingHover(setHoverD)
-      .onRingClick((d) => navigate(`/region/${d.id}`));
+      .onRingClick((d) => navigate(`/region/${d.id}`))
+      .arcsData(arcData);
+      
   }, [regions, navigate]);
 
   function getColor(score, threat = "thermal") {
+    // Increased vibrance for colorful mode requirement
     const palette = {
-      acidification: [26, 163, 184],
-      thermal: score >= 8 ? [192, 57, 43] : [230, 126, 34],
-      hypoxia: [126, 87, 194],
+      acidification: [0, 255, 204], // Vibrant cyan/teal
+      thermal: score >= 8 ? [255, 51, 102] : [255, 153, 0], // Bright pink-red or hyper-orange
+      hypoxia: [178, 102, 255], // Neon purple
     };
     const [r, g, b] = palette[threat] || palette.thermal;
     return (t) => `rgba(${r}, ${g}, ${b}, ${1 - t})`;
   }
 
   return (
-    <div className="w-full h-full relative pointer-events-auto">
-      <div ref={containerRef} className="h-full w-full cursor-pointer" />
+    <div className="w-full h-full relative pointer-events-auto overflow-hidden">
+      <div 
+        ref={containerRef} 
+        className="h-full w-full cursor-pointer mix-blend-screen" 
+        style={{ filter: "drop-shadow(0 0 30px rgba(10,132,255,0.15))" }}
+      />
 
-      {/* Existing region hover tooltip */}
+      {/* Futuristic Hover Tooltip */}
       {hoverD && (
         <div
-          className="absolute pointer-events-none z-50 bg-navy/90 border border-grey-dark p-4 rounded shadow-2xl backdrop-blur-sm"
+          className="absolute pointer-events-none z-50 p-5 rounded-2xl transition-all duration-300 ease-out"
           style={{
             left: "50%",
             top: "50%",
-            transform: "translate(40px, -50%)",
-            boxShadow: `0 0 20px ${getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0.5)}`,
+            transform: "translate(60px, -50%)",
+            background: "linear-gradient(145deg, rgba(14,28,51,0.95) 0%, rgba(10,22,40,0.98) 100%)",
+            border: `1px solid ${getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0.6)}`,
+            boxShadow: `0 20px 60px -10px ${getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0.4)}, inset 0 1px 0 rgba(255,255,255,0.1)`,
+            backdropFilter: "blur(12px)",
           }}
         >
-          <h3 className="text-lg font-bold text-white mb-1">{hoverD.name}</h3>
-          <div
-            className="text-3xl font-mono mb-2"
-            style={{ color: getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0) }}
-          >
-            {hoverD.threshold_proximity_score.toFixed(1)}{" "}
-            <span className="text-sm font-sans text-grey-mid">SCORE</span>
+          <div className="flex items-center gap-3 mb-2">
+             <div 
+                className="w-3 h-3 rounded-full animate-pulse" 
+                style={{ backgroundColor: getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0) }}
+             />
+             <h3 className="text-xl font-bold text-white tracking-wide">{hoverD.name}</h3>
           </div>
-          <div className="text-sm text-grey-mid">T-{hoverD.days_to_threshold} Days to Threshold</div>
-          <div className="mt-1 text-sm text-white">{hoverD.primary_driver}</div>
-          <div className="text-sm text-grey-mid mt-1">Gap: ${(hoverD.funding_gap / 1000000).toFixed(1)}M</div>
-          <div className="text-teal-light text-xs font-bold mt-3 uppercase tracking-widest">
-            Click to View Brief →
+          
+          <div className="grid grid-cols-2 gap-4 mt-4">
+             <div className="bg-black/30 rounded-lg p-3 border border-white/5">
+                <div className="text-xs text-grey-mid uppercase tracking-widest mb-1">Score</div>
+                <div 
+                  className="text-3xl font-mono"
+                  style={{ color: getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0) }}
+                >
+                  {hoverD.threshold_proximity_score.toFixed(1)}
+                </div>
+             </div>
+             
+             <div className="bg-black/30 rounded-lg p-3 border border-white/5">
+                <div className="text-xs text-grey-mid uppercase tracking-widest mb-1">Threshold</div>
+                <div className="text-3xl font-mono text-white">
+                  T-{hoverD.days_to_threshold}
+                </div>
+             </div>
+          </div>
+          
+          <div className="mt-4 text-sm text-grey-light/90 border-l-2 pl-3" style={{ borderColor: getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0.4) }}>
+             {hoverD.primary_driver}
+          </div>
+          <div className="mt-3 text-sm flex justify-between items-center text-grey-mid">
+             <span>Estimated Gap:</span>
+             <span className="text-white font-mono">${(hoverD.funding_gap / 1000000).toFixed(1)}M</span>
+          </div>
+          
+          <div className="mt-5 w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg py-2 text-center font-bold uppercase tracking-widest transition-colors cursor-pointer" style={{ color: getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0) }}>
+            Analyze Deep Threat Profile →
           </div>
         </div>
       )}
