@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, ArrowUpRight, Waves } from "lucide-react";
-import { mockFundingGap } from "../../hooks/mockData";
+
 import { useApiResource } from "../../hooks/useApiResource";
 
 function formatMoney(value) {
@@ -48,13 +48,11 @@ export default function FundingGapRadar({
   const [hoveredId, setHoveredId] = useState(null);
   const state = useApiResource({
     endpoint: data ? null : "/api/v1/funding/gap",
-    fallbackData: mockFundingGap,
-    initialData: mockFundingGap,
     enabled: !data,
     transform: (rows) => rows.map(normalizeRow),
   });
 
-  const points = useMemo(() => (data ?? state.data ?? mockFundingGap).map(normalizeRow), [data, state.data]);
+  const points = useMemo(() => (data ?? state.data ?? []).map(normalizeRow), [data, state.data]);
   const width = 880;
   const height = 580;
   const padding = 80;

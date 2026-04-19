@@ -1,7 +1,7 @@
 import React from "react";
 import { AlertTriangle, Clock3, Radar } from "lucide-react";
 import useRegionBrief from "../../hooks/useRegionBrief";
-import { getMockCharities } from "../../hooks/mockData";
+
 import BranchingPaths from "./BranchingPaths";
 import FundingIntelligence from "./FundingIntelligence";
 import NewsFeed from "./NewsFeed";
@@ -24,7 +24,7 @@ export default function RegionBrief({
   const regionNews = news ?? brief.news;
   const regionEstimate = estimate ?? brief.estimate;
   const scoreBreakdown = breakdown ?? brief.scoreBreakdown;
-  const partnerCharities = charities ?? getMockCharities(region?.id);
+  const partnerCharities = charities ?? [];
   const loading = loadingOverride ?? brief.loading;
   const score = Number(region?.current_score ?? region?.threshold_proximity_score ?? 0);
 
