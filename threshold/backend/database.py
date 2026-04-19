@@ -1,7 +1,10 @@
 from __future__ import annotations
 from typing import Optional
 
+import logging
 from contextlib import contextmanager
+
+logger = logging.getLogger(__name__)
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Iterator
 
@@ -651,22 +654,30 @@ def seed_demo_data() -> None:
                 NEWS_SEED,
             )
 
-        conn.execute(
-            text(
-                """
-                INSERT OR REPLACE INTO region_features (
-                    region_id, date, sst_anomaly, o2_current, chlorophyll_anomaly,
-                    co2_regional_ppm, nitrate_anomaly, threshold_proximity_score,
-                    scientific_event_flag, active_situation_reports
-                ) VALUES (
-                    :region_id, :date, :sst_anomaly, :o2_current, :chlorophyll_anomaly,
-                    :co2_regional_ppm, :nitrate_anomaly, :threshold_proximity_score,
-                    :scientific_event_flag, :active_situation_reports
-                )
-                """
-            ),
-            list(_generate_region_features()),
-        )
+        feature_count = conn.execute(text("SELECT COUNT(*) FROM region_features")).scalar_one()
+        if feature_count == 0:
+            # Pipeline hasn't run yet — seed with synthetic 3-year El Niño data
+            conn.execute(
+                text(
+                    """
+                    INSERT OR REPLACE INTO region_features (
+                        region_id, date, sst_anomaly, o2_current, chlorophyll_anomaly,
+                        co2_regional_ppm, nitrate_anomaly, threshold_proximity_score,
+                        scientific_event_flag, active_situation_reports
+                    ) VALUES (
+                        :region_id, :date, :sst_anomaly, :o2_current, :chlorophyll_anomaly,
+                        :co2_regional_ppm, :nitrate_anomaly, :threshold_proximity_score,
+                        :scientific_event_flag, :active_situation_reports
+                    )
+                    """
+                ),
+                list(_generate_region_features()),
+            )
+        else:
+            logger.info(
+                "region_features already has %d rows (pipeline data) — skipping synthetic seed",
+                feature_count,
+            )
 
         attention_count = conn.execute(text("SELECT COUNT(*) FROM media_attention")).scalar_one()
         if attention_count == 0:

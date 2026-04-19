@@ -37,6 +37,9 @@ PROCESSING_MODULES = [
     "data.processing.media_attention_scorer",
 ]
 
+# Final step: map processed pipeline tables → backend API tables
+BACKEND_SYNC_MODULE = "data.seed_backend"
+
 
 async def run_module(module_name: str) -> tuple[str, int]:
     loop = asyncio.get_running_loop()
@@ -66,6 +69,12 @@ async def main() -> None:
         result = await run_module(module_name)
         name, rows = result
         print(f"✓ {name}: {rows:,} rows")
+
+    # Sync pipeline output → backend API tables
+    print("\n--- Seeding backend database ---")
+    result = await run_module(BACKEND_SYNC_MODULE)
+    name, rows = result
+    print(f"✓ {name}: {rows:,} tables synced")
 
 
 if __name__ == "__main__":
