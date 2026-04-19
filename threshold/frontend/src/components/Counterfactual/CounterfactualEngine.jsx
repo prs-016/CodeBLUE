@@ -90,7 +90,7 @@ export default function CounterfactualEngine({
                 activeCase?.case_id === item.case_id ? "bg-white text-navy" : "border border-grey-dark text-grey-mid hover:text-white"
               }`}
             >
-              {item.region}
+              {item.event ?? item.event_name ?? item.region}
             </button>
           ))}
         </div>
