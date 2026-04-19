@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -47,13 +48,14 @@ def get_news(
     source: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ) -> list[dict]:
+    cutoff_date = (datetime.utcnow() - timedelta(days=days_back)).strftime("%Y-%m-%d")
     query = """
         SELECT id, title, source_type, source_org, date, body_summary, url, urgency_score, disaster_type
         FROM news_reports
         WHERE region_id = :region_id
-          AND date >= date('now', :days_back)
+          AND date >= :cutoff_date
     """
-    params: dict[str, object] = {"region_id": region_id, "days_back": f"-{days_back} day"}
+    params: dict[str, object] = {"region_id": region_id, "cutoff_date": cutoff_date}
     if source and source.lower() != "all":
         query += " AND source_type = :source"
         params["source"] = source.lower()

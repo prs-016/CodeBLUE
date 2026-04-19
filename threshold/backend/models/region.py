@@ -60,6 +60,8 @@ class StressSignalPoint(BaseModel):
     threshold_proximity_score: float
     scientific_event_flag: bool
     active_situation_reports: int
+    dhw_current: Optional[float] = None
+    bleaching_alert_level: Optional[float] = None
 
 
 class TriageItem(BaseModel):

@@ -37,8 +37,7 @@ def get_triage_queue(
     query = """
         SELECT
             id, name, current_score, days_to_threshold, funding_gap,
-            primary_threat AS threat_type, population_affected, primary_driver,
-            ROUND(funding_gap / CAST(MAX(population_affected, 1) AS REAL), 4) AS impact_value
+            primary_threat AS threat_type, population_affected, primary_driver
         FROM regions
         WHERE 1=1
     """
@@ -55,4 +54,10 @@ def get_triage_queue(
     query += f" ORDER BY {order_column} {order_direction}, current_score DESC LIMIT 50"
 
     rows = db.execute(text(query), params).fetchall()
-    return [TriageItem(**dict(row._mapping)) for row in rows]
+    result = []
+    for row in rows:
+        d = dict(row._mapping)
+        pop = d.get("population_affected") or 1
+        d["impact_value"] = round(d["funding_gap"] / max(pop, 1), 4)
+        result.append(TriageItem(**d))
+    return result

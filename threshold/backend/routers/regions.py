@@ -117,7 +117,8 @@ def get_stress_signals(region_id: str, db: Session = Depends(get_db)) -> list[St
             """
             SELECT date, sst_anomaly, o2_current, chlorophyll_anomaly,
                    co2_regional_ppm, nitrate_anomaly, threshold_proximity_score,
-                   scientific_event_flag, active_situation_reports
+                   scientific_event_flag, active_situation_reports,
+                   dhw_current, bleaching_alert_level
             FROM region_features
             WHERE region_id = :region_id
             ORDER BY date ASC
@@ -139,6 +140,8 @@ def get_stress_signals(region_id: str, db: Session = Depends(get_db)) -> list[St
             threshold_proximity_score=row.threshold_proximity_score,
             scientific_event_flag=bool(row.scientific_event_flag),
             active_situation_reports=row.active_situation_reports,
+            dhw_current=getattr(row, "dhw_current", None),
+            bleaching_alert_level=getattr(row, "bleaching_alert_level", None),
         )
         for row in rows
     ]
