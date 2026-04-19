@@ -1,0 +1,1647 @@
+{
+ "Resources": {
+  "ThresholdVpcD2D31DCD": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/Resource"
+   }
+  },
+  "ThresholdVpcPublicSubnet1SubnetFE036783": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-west-2a",
+    "CidrBlock": "10.0.0.0/18",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "ThresholdVpcD2D31DCD"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PublicSubnet1/Subnet"
+   }
+  },
+  "ThresholdVpcPublicSubnet1RouteTable1CA0119D": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "ThresholdVpcD2D31DCD"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PublicSubnet1/RouteTable"
+   }
+  },
+  "ThresholdVpcPublicSubnet1RouteTableAssociation56EEFDA3": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "ThresholdVpcPublicSubnet1RouteTable1CA0119D"
+    },
+    "SubnetId": {
+     "Ref": "ThresholdVpcPublicSubnet1SubnetFE036783"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PublicSubnet1/RouteTableAssociation"
+   }
+  },
+  "ThresholdVpcPublicSubnet1DefaultRoute2AAEDF84": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "ThresholdVpcIGWAEE922E1"
+    },
+    "RouteTableId": {
+     "Ref": "ThresholdVpcPublicSubnet1RouteTable1CA0119D"
+    }
+   },
+   "DependsOn": [
+    "ThresholdVpcVPCGW75BE59A4"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PublicSubnet1/DefaultRoute"
+   }
+  },
+  "ThresholdVpcPublicSubnet1EIP1B5A3390": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc/PublicSubnet1"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PublicSubnet1/EIP"
+   }
+  },
+  "ThresholdVpcPublicSubnet1NATGatewayAADBB54B": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "ThresholdVpcPublicSubnet1EIP1B5A3390",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "ThresholdVpcPublicSubnet1SubnetFE036783"
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc/PublicSubnet1"
+     }
+    ]
+   },
+   "DependsOn": [
+    "ThresholdVpcPublicSubnet1DefaultRoute2AAEDF84",
+    "ThresholdVpcPublicSubnet1RouteTableAssociation56EEFDA3"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PublicSubnet1/NATGateway"
+   }
+  },
+  "ThresholdVpcPublicSubnet2SubnetF84F232F": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-west-2b",
+    "CidrBlock": "10.0.64.0/18",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "ThresholdVpcD2D31DCD"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PublicSubnet2/Subnet"
+   }
+  },
+  "ThresholdVpcPublicSubnet2RouteTable99790D83": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "ThresholdVpcD2D31DCD"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PublicSubnet2/RouteTable"
+   }
+  },
+  "ThresholdVpcPublicSubnet2RouteTableAssociation769FDF14": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "ThresholdVpcPublicSubnet2RouteTable99790D83"
+    },
+    "SubnetId": {
+     "Ref": "ThresholdVpcPublicSubnet2SubnetF84F232F"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PublicSubnet2/RouteTableAssociation"
+   }
+  },
+  "ThresholdVpcPublicSubnet2DefaultRoute0887A7D9": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "ThresholdVpcIGWAEE922E1"
+    },
+    "RouteTableId": {
+     "Ref": "ThresholdVpcPublicSubnet2RouteTable99790D83"
+    }
+   },
+   "DependsOn": [
+    "ThresholdVpcVPCGW75BE59A4"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PublicSubnet2/DefaultRoute"
+   }
+  },
+  "ThresholdVpcPublicSubnet2EIP6E3A6902": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc/PublicSubnet2"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PublicSubnet2/EIP"
+   }
+  },
+  "ThresholdVpcPublicSubnet2NATGateway5C1CB2D6": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "ThresholdVpcPublicSubnet2EIP6E3A6902",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "ThresholdVpcPublicSubnet2SubnetF84F232F"
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc/PublicSubnet2"
+     }
+    ]
+   },
+   "DependsOn": [
+    "ThresholdVpcPublicSubnet2DefaultRoute0887A7D9",
+    "ThresholdVpcPublicSubnet2RouteTableAssociation769FDF14"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PublicSubnet2/NATGateway"
+   }
+  },
+  "ThresholdVpcPrivateSubnet1Subnet3CFD9D23": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-west-2a",
+    "CidrBlock": "10.0.128.0/18",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc/PrivateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "ThresholdVpcD2D31DCD"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PrivateSubnet1/Subnet"
+   }
+  },
+  "ThresholdVpcPrivateSubnet1RouteTableA86ABFC0": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc/PrivateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "ThresholdVpcD2D31DCD"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PrivateSubnet1/RouteTable"
+   }
+  },
+  "ThresholdVpcPrivateSubnet1RouteTableAssociation9C52F8BC": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "ThresholdVpcPrivateSubnet1RouteTableA86ABFC0"
+    },
+    "SubnetId": {
+     "Ref": "ThresholdVpcPrivateSubnet1Subnet3CFD9D23"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PrivateSubnet1/RouteTableAssociation"
+   }
+  },
+  "ThresholdVpcPrivateSubnet1DefaultRoute2E0B674D": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "ThresholdVpcPublicSubnet1NATGatewayAADBB54B"
+    },
+    "RouteTableId": {
+     "Ref": "ThresholdVpcPrivateSubnet1RouteTableA86ABFC0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PrivateSubnet1/DefaultRoute"
+   }
+  },
+  "ThresholdVpcPrivateSubnet2Subnet108FEBEB": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-west-2b",
+    "CidrBlock": "10.0.192.0/18",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc/PrivateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "ThresholdVpcD2D31DCD"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PrivateSubnet2/Subnet"
+   }
+  },
+  "ThresholdVpcPrivateSubnet2RouteTableF0C2F99C": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc/PrivateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "ThresholdVpcD2D31DCD"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PrivateSubnet2/RouteTable"
+   }
+  },
+  "ThresholdVpcPrivateSubnet2RouteTableAssociation85E8E592": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "ThresholdVpcPrivateSubnet2RouteTableF0C2F99C"
+    },
+    "SubnetId": {
+     "Ref": "ThresholdVpcPrivateSubnet2Subnet108FEBEB"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PrivateSubnet2/RouteTableAssociation"
+   }
+  },
+  "ThresholdVpcPrivateSubnet2DefaultRoute896EC0EB": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "ThresholdVpcPublicSubnet2NATGateway5C1CB2D6"
+    },
+    "RouteTableId": {
+     "Ref": "ThresholdVpcPrivateSubnet2RouteTableF0C2F99C"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/PrivateSubnet2/DefaultRoute"
+   }
+  },
+  "ThresholdVpcIGWAEE922E1": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "ThresholdStack/ThresholdVpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/IGW"
+   }
+  },
+  "ThresholdVpcVPCGW75BE59A4": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "ThresholdVpcIGWAEE922E1"
+    },
+    "VpcId": {
+     "Ref": "ThresholdVpcD2D31DCD"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdVpc/VPCGW"
+   }
+  },
+  "ThresholdDataLakeA959A475": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketName": "threshold-data-lake-2025-v2",
+    "Tags": [
+     {
+      "Key": "aws-cdk:auto-delete-objects",
+      "Value": "true"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdDataLake/Resource"
+   }
+  },
+  "ThresholdDataLakePolicyF477EF96": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "ThresholdDataLakeA959A475"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:PutBucketPolicy",
+        "s3:GetBucket*",
+        "s3:List*",
+        "s3:DeleteObject*"
+       ],
+       "Effect": "Allow",
+       "Principal": {
+        "AWS": {
+         "Fn::GetAtt": [
+          "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+          "Arn"
+         ]
+        }
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ThresholdDataLakeA959A475",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ThresholdDataLakeA959A475",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdDataLake/Policy/Resource"
+   }
+  },
+  "ThresholdDataLakeAutoDeleteObjectsCustomResource19408674": {
+   "Type": "Custom::S3AutoDeleteObjects",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F",
+      "Arn"
+     ]
+    },
+    "BucketName": {
+     "Ref": "ThresholdDataLakeA959A475"
+    }
+   },
+   "DependsOn": [
+    "ThresholdDataLakePolicyF477EF96"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdDataLake/AutoDeleteObjectsCustomResource/Default"
+   }
+  },
+  "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Version": "2012-10-17",
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ]
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role"
+   }
+  },
+  "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-140219385716-us-west-2",
+     "S3Key": "6c1e9b465fa4b2d651dbc9ce3e732d8702a7b19137327684a71d89f1d355f1a2.zip"
+    },
+    "Timeout": 900,
+    "MemorySize": 128,
+    "Handler": "index.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Description": {
+     "Fn::Join": [
+      "",
+      [
+       "Lambda function for auto-deleting objects in ",
+       {
+        "Ref": "ThresholdDataLakeA959A475"
+       },
+       " S3 bucket."
+      ]
+     ]
+    }
+   },
+   "DependsOn": [
+    "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler",
+    "aws:asset:path": "asset.6c1e9b465fa4b2d651dbc9ce3e732d8702a7b19137327684a71d89f1d355f1a2",
+    "aws:asset:property": "Code"
+   }
+  },
+  "ThresholdDLQ67D3C496": {
+   "Type": "AWS::SQS::Queue",
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdDLQ/Resource"
+   }
+  },
+  "ValidationLambdaServiceRoleC65F14AB": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ValidationLambda/ServiceRole/Resource"
+   }
+  },
+  "ValidationLambdaServiceRoleDefaultPolicyF69C66E3": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*",
+        "s3:DeleteObject*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging",
+        "s3:Abort*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ThresholdDataLakeA959A475",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ThresholdDataLakeA959A475",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "ValidationLambdaServiceRoleDefaultPolicyF69C66E3",
+    "Roles": [
+     {
+      "Ref": "ValidationLambdaServiceRoleC65F14AB"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ValidationLambda/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "ValidationLambda6B331F4E": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-140219385716-us-west-2",
+     "S3Key": "73ac67c8f468732323b9162406fffd6f6cfabd5dba3e20020cec8d8c2fce8bc0.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "BUCKET_NAME": {
+       "Ref": "ThresholdDataLakeA959A475"
+      }
+     }
+    },
+    "Handler": "ingest_handler.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "ValidationLambdaServiceRoleC65F14AB",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.9"
+   },
+   "DependsOn": [
+    "ValidationLambdaServiceRoleDefaultPolicyF69C66E3",
+    "ValidationLambdaServiceRoleC65F14AB"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ValidationLambda/Resource",
+    "aws:asset:path": "asset.73ac67c8f468732323b9162406fffd6f6cfabd5dba3e20020cec8d8c2fce8bc0",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "ThresholdSecrets1555855D": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "GenerateSecretString": {
+     "GenerateStringKey": "REPLACE_ME",
+     "SecretStringTemplate": "{}"
+    },
+    "Name": "threshold/api_keys"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdSecrets/Resource"
+   }
+  },
+  "ThresholdClusterBBCF1A92": {
+   "Type": "AWS::ECS::Cluster",
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdCluster/Resource"
+   }
+  },
+  "ThresholdBackendLB19C25979": {
+   "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+   "Properties": {
+    "LoadBalancerAttributes": [
+     {
+      "Key": "deletion_protection.enabled",
+      "Value": "false"
+     }
+    ],
+    "Scheme": "internet-facing",
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "ThresholdBackendLBSecurityGroupF13388C3",
+       "GroupId"
+      ]
+     }
+    ],
+    "Subnets": [
+     {
+      "Ref": "ThresholdVpcPublicSubnet1SubnetFE036783"
+     },
+     {
+      "Ref": "ThresholdVpcPublicSubnet2SubnetF84F232F"
+     }
+    ],
+    "Type": "application"
+   },
+   "DependsOn": [
+    "ThresholdVpcPublicSubnet1DefaultRoute2AAEDF84",
+    "ThresholdVpcPublicSubnet1RouteTableAssociation56EEFDA3",
+    "ThresholdVpcPublicSubnet2DefaultRoute0887A7D9",
+    "ThresholdVpcPublicSubnet2RouteTableAssociation769FDF14"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdBackend/LB/Resource"
+   }
+  },
+  "ThresholdBackendLBSecurityGroupF13388C3": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Automatically created Security Group for ELB ThresholdStackThresholdBackendLB4F18FAD5",
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow from anyone on port 80",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "VpcId": {
+     "Ref": "ThresholdVpcD2D31DCD"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdBackend/LB/SecurityGroup/Resource"
+   }
+  },
+  "ThresholdBackendLBSecurityGrouptoThresholdStackThresholdBackendServiceSecurityGroupDFFB986A80003F40E035": {
+   "Type": "AWS::EC2::SecurityGroupEgress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "DestinationSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ThresholdBackendServiceSecurityGroupB3A02BAA",
+      "GroupId"
+     ]
+    },
+    "FromPort": 8000,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "ThresholdBackendLBSecurityGroupF13388C3",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "ToPort": 8000
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdBackend/LB/SecurityGroup/to ThresholdStackThresholdBackendServiceSecurityGroupDFFB986A:8000"
+   }
+  },
+  "ThresholdBackendLBPublicListenerCAAA38D5": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "ThresholdBackendLBPublicListenerECSGroup48A027CB"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "ThresholdBackendLB19C25979"
+    },
+    "Port": 80,
+    "Protocol": "HTTP"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdBackend/LB/PublicListener/Resource"
+   }
+  },
+  "ThresholdBackendLBPublicListenerECSGroup48A027CB": {
+   "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "Properties": {
+    "Port": 80,
+    "Protocol": "HTTP",
+    "TargetGroupAttributes": [
+     {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+     }
+    ],
+    "TargetType": "ip",
+    "VpcId": {
+     "Ref": "ThresholdVpcD2D31DCD"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdBackend/LB/PublicListener/ECSGroup/Resource"
+   }
+  },
+  "ThresholdBackendTaskDefTaskRole97C4D720": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdBackend/TaskDef/TaskRole/Resource"
+   }
+  },
+  "ThresholdBackendTaskDef17A7D393": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Essential": true,
+      "Image": {
+       "Fn::Sub": "140219385716.dkr.ecr.us-west-2.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-140219385716-us-west-2:fbe008a5b374d4dce277127df2eca93cec6aa537719e5d5a855e4444314d959a"
+      },
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": {
+         "Ref": "ThresholdBackendTaskDefwebLogGroupAD49DB93"
+        },
+        "awslogs-stream-prefix": "ThresholdBackend",
+        "awslogs-region": "us-west-2"
+       }
+      },
+      "Name": "web",
+      "PortMappings": [
+       {
+        "ContainerPort": 8000,
+        "Protocol": "tcp"
+       }
+      ],
+      "Secrets": [
+       {
+        "Name": "STRIPE_SECRET_KEY",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "ThresholdSecrets1555855D"
+           },
+           ":STRIPE_SECRET_KEY::"
+          ]
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "Cpu": "512",
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "ThresholdBackendTaskDefExecutionRoleE214EBF7",
+      "Arn"
+     ]
+    },
+    "Family": "ThresholdStackThresholdBackendTaskDef63B21ADB",
+    "Memory": "1024",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "ThresholdBackendTaskDefTaskRole97C4D720",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdBackend/TaskDef/Resource"
+   }
+  },
+  "ThresholdBackendTaskDefwebLogGroupAD49DB93": {
+   "Type": "AWS::Logs::LogGroup",
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdBackend/TaskDef/web/LogGroup/Resource"
+   }
+  },
+  "ThresholdBackendTaskDefExecutionRoleE214EBF7": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdBackend/TaskDef/ExecutionRole/Resource"
+   }
+  },
+  "ThresholdBackendTaskDefExecutionRoleDefaultPolicyF2DE3B67": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          "arn:",
+          {
+           "Ref": "AWS::Partition"
+          },
+          ":ecr:us-west-2:140219385716:repository/cdk-hnb659fds-container-assets-140219385716-us-west-2"
+         ]
+        ]
+       }
+      },
+      {
+       "Action": "ecr:GetAuthorizationToken",
+       "Effect": "Allow",
+       "Resource": "*"
+      },
+      {
+       "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "ThresholdBackendTaskDefwebLogGroupAD49DB93",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "ThresholdSecrets1555855D"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "ThresholdBackendTaskDefExecutionRoleDefaultPolicyF2DE3B67",
+    "Roles": [
+     {
+      "Ref": "ThresholdBackendTaskDefExecutionRoleE214EBF7"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdBackend/TaskDef/ExecutionRole/DefaultPolicy/Resource"
+   }
+  },
+  "ThresholdBackendService3A0E20AC": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "Cluster": {
+     "Ref": "ThresholdClusterBBCF1A92"
+    },
+    "DeploymentConfiguration": {
+     "Alarms": {
+      "AlarmNames": [],
+      "Enable": false,
+      "Rollback": false
+     },
+     "MaximumPercent": 200,
+     "MinimumHealthyPercent": 50
+    },
+    "DesiredCount": 1,
+    "EnableECSManagedTags": false,
+    "HealthCheckGracePeriodSeconds": 60,
+    "LaunchType": "FARGATE",
+    "LoadBalancers": [
+     {
+      "ContainerName": "web",
+      "ContainerPort": 8000,
+      "TargetGroupArn": {
+       "Ref": "ThresholdBackendLBPublicListenerECSGroup48A027CB"
+      }
+     }
+    ],
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "DISABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "ThresholdBackendServiceSecurityGroupB3A02BAA",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       {
+        "Ref": "ThresholdVpcPrivateSubnet1Subnet3CFD9D23"
+       },
+       {
+        "Ref": "ThresholdVpcPrivateSubnet2Subnet108FEBEB"
+       }
+      ]
+     }
+    },
+    "TaskDefinition": {
+     "Ref": "ThresholdBackendTaskDef17A7D393"
+    }
+   },
+   "DependsOn": [
+    "ThresholdBackendLBPublicListenerECSGroup48A027CB",
+    "ThresholdBackendLBPublicListenerCAAA38D5",
+    "ThresholdBackendTaskDefTaskRole97C4D720"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdBackend/Service/Service"
+   }
+  },
+  "ThresholdBackendServiceSecurityGroupB3A02BAA": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "ThresholdStack/ThresholdBackend/Service/SecurityGroup",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "ThresholdVpcD2D31DCD"
+    }
+   },
+   "DependsOn": [
+    "ThresholdBackendTaskDefTaskRole97C4D720"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdBackend/Service/SecurityGroup/Resource"
+   }
+  },
+  "ThresholdBackendServiceSecurityGroupfromThresholdStackThresholdBackendLBSecurityGroup30D1C3B3800002746A9D": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "FromPort": 8000,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "ThresholdBackendServiceSecurityGroupB3A02BAA",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ThresholdBackendLBSecurityGroupF13388C3",
+      "GroupId"
+     ]
+    },
+    "ToPort": 8000
+   },
+   "DependsOn": [
+    "ThresholdBackendTaskDefTaskRole97C4D720"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdBackend/Service/SecurityGroup/from ThresholdStackThresholdBackendLBSecurityGroup30D1C3B3:8000"
+   }
+  },
+  "ThresholdFrontend87C39D2D": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "IgnorePublicAcls": true
+    },
+    "Tags": [
+     {
+      "Key": "aws-cdk:auto-delete-objects",
+      "Value": "true"
+     },
+     {
+      "Key": "aws-cdk:cr-owned:7b38750e",
+      "Value": "true"
+     }
+    ],
+    "WebsiteConfiguration": {
+     "IndexDocument": "index.html"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdFrontend/Resource"
+   }
+  },
+  "ThresholdFrontendPolicy46E5D3EE": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "ThresholdFrontend87C39D2D"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "s3:GetObject",
+       "Effect": "Allow",
+       "Principal": {
+        "AWS": "*"
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "ThresholdFrontend87C39D2D",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      },
+      {
+       "Action": [
+        "s3:PutBucketPolicy",
+        "s3:GetBucket*",
+        "s3:List*",
+        "s3:DeleteObject*"
+       ],
+       "Effect": "Allow",
+       "Principal": {
+        "AWS": {
+         "Fn::GetAtt": [
+          "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+          "Arn"
+         ]
+        }
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ThresholdFrontend87C39D2D",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ThresholdFrontend87C39D2D",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdFrontend/Policy/Resource"
+   }
+  },
+  "ThresholdFrontendAutoDeleteObjectsCustomResource41D2EE15": {
+   "Type": "Custom::S3AutoDeleteObjects",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F",
+      "Arn"
+     ]
+    },
+    "BucketName": {
+     "Ref": "ThresholdFrontend87C39D2D"
+    }
+   },
+   "DependsOn": [
+    "ThresholdFrontendPolicy46E5D3EE"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdFrontend/AutoDeleteObjectsCustomResource/Default"
+   }
+  },
+  "DeployFrontendAwsCliLayerD774ED8F": {
+   "Type": "AWS::Lambda::LayerVersion",
+   "Properties": {
+    "Content": {
+     "S3Bucket": "cdk-hnb659fds-assets-140219385716-us-west-2",
+     "S3Key": "d54131479d598c775f0e53e01a3cb8087ae6f3901a38d3dc2dd0119b19f2c274.zip"
+    },
+    "Description": "/opt/awscli/aws"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/DeployFrontend/AwsCliLayer/Resource",
+    "aws:asset:path": "asset.d54131479d598c775f0e53e01a3cb8087ae6f3901a38d3dc2dd0119b19f2c274.zip",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Content"
+   }
+  },
+  "DeployFrontendCustomResource3E02C3B7": {
+   "Type": "Custom::CDKBucketDeployment",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536",
+      "Arn"
+     ]
+    },
+    "SourceBucketNames": [
+     "cdk-hnb659fds-assets-140219385716-us-west-2"
+    ],
+    "SourceObjectKeys": [
+     "9e1a8c300215eee026f42e2b886b2d7dde63ca32c9cab142bde95345ebfaeeb1.zip"
+    ],
+    "DestinationBucketName": {
+     "Ref": "ThresholdFrontend87C39D2D"
+    },
+    "Prune": true
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/DeployFrontend/CustomResource/Default"
+   }
+  },
+  "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/Resource"
+   }
+  },
+  "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":s3:::cdk-hnb659fds-assets-140219385716-us-west-2"
+          ]
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":s3:::cdk-hnb659fds-assets-140219385716-us-west-2/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*",
+        "s3:DeleteObject*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging",
+        "s3:Abort*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ThresholdFrontend87C39D2D",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ThresholdFrontend87C39D2D",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF",
+    "Roles": [
+     {
+      "Ref": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-140219385716-us-west-2",
+     "S3Key": "2d56e153cac88d3e0c2f842e8e6f6783b8725bf91f95e0673b4725448a56e96d.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "AWS_CA_BUNDLE": "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
+     }
+    },
+    "Handler": "index.handler",
+    "Layers": [
+     {
+      "Ref": "DeployFrontendAwsCliLayerD774ED8F"
+     }
+    ],
+    "Role": {
+     "Fn::GetAtt": [
+      "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.9",
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF",
+    "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/Resource",
+    "aws:asset:path": "asset.2d56e153cac88d3e0c2f842e8e6f6783b8725bf91f95e0673b4725448a56e96d",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "ThresholdModelConfig": {
+   "Type": "AWS::SageMaker::Model",
+   "Properties": {
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "ValidationLambdaServiceRoleC65F14AB",
+      "Arn"
+     ]
+    },
+    "PrimaryContainer": {
+     "Image": "763104351884.dkr.ecr.us-west-2.amazonaws.com/pytorch-inference:1.12.0-cpu-py38",
+     "Mode": "SingleModel",
+     "ModelDataUrl": {
+      "Fn::Join": [
+       "",
+       [
+        "s3://",
+        {
+         "Ref": "ThresholdDataLakeA959A475"
+        },
+        "/ml/threshold_net_best.tar.gz"
+       ]
+      ]
+     }
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdModelConfig"
+   }
+  },
+  "ThresholdEndpointConfig": {
+   "Type": "AWS::SageMaker::EndpointConfig",
+   "Properties": {
+    "ProductionVariants": [
+     {
+      "InitialVariantWeight": 1,
+      "ModelName": {
+       "Fn::GetAtt": [
+        "ThresholdModelConfig",
+        "ModelName"
+       ]
+      },
+      "ServerlessConfig": {
+       "MaxConcurrency": 5,
+       "MemorySizeInMB": 2048
+      },
+      "VariantName": "AllTraffic"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdEndpointConfig"
+   }
+  },
+  "ThresholdSageMakerEndpoint": {
+   "Type": "AWS::SageMaker::Endpoint",
+   "Properties": {
+    "EndpointConfigName": {
+     "Fn::GetAtt": [
+      "ThresholdEndpointConfig",
+      "EndpointConfigName"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/ThresholdSageMakerEndpoint"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31T227bMAz9lr6r2ppiH5CmFwToNi8p+howMuNykSVPpBIYhv99kOzEaXd54jlHFH1E0jN9c/tFf76CI1+bcn9taau7tYDZKzjypkMz091rY9Ri516LhSri1pJZx61DSdqEVj4KvsDW4qRP2pzZGwIh787JCTwsixS+gTyB4BFaVQQ6gOBUeOkEg8NzwuBkZHMRMG81OlFrNDGQtE/BxyZ7+K/wUAVk/kNeuqz3im91dxfNfjAxoiEU3pJpJ3nkA7kDxl7xL9bdj4gxvzKDXlmotyXo7jE6c+rEJX6GFsMrBk58Ta6yKP6c0SuCWncrP3Q4x8nJgJLtTQfMKKznKagSG+vb1CE9GLw/C71iNAGFa3BQYdDdOvOxKQGlV2hYdwsbWTAk/QQfIVSQhsv7e9yRo9MjPireCZDDcKGNd9cYDmSGdRlg/tymAUkTZz1vGksmL82zh/IOLDiD5YfraIGFjPVQbnMGueow093fb+dHvOOXecSCbsw54YvzFwgVynmfLmhyHjZj4++92WNY1lDhMAM0Qa+w8UziQ5s2RFlfse6efXWudsK9Yqiwhn0ayGLnvvoSbf5XXNl4crLwbkfVpdL3aoXsY0jdjCy+nujO/eOoCP5AJYZsJ/tcC1TkcuXvUZoo48ZubFrMDRzZWNLzIy8s5V3tVdHKm3efbvXNjZ5d/WSi6xCdUI16NcTf39uuh2IEAAA="
+   },
+   "Metadata": {
+    "aws:cdk:path": "ThresholdStack/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "ThresholdBackendLoadBalancerDNSB668E26B": {
+   "Value": {
+    "Fn::GetAtt": [
+     "ThresholdBackendLB19C25979",
+     "DNSName"
+    ]
+   }
+  },
+  "ThresholdBackendServiceURL4617D09B": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "http://",
+      {
+       "Fn::GetAtt": [
+        "ThresholdBackendLB19C25979",
+        "DNSName"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  "BackendAPIUrl": {
+   "Value": {
+    "Fn::GetAtt": [
+     "ThresholdBackendLB19C25979",
+     "DNSName"
+    ]
+   }
+  },
+  "FrontendUrl": {
+   "Value": {
+    "Fn::GetAtt": [
+     "ThresholdFrontend87C39D2D",
+     "WebsiteURL"
+    ]
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

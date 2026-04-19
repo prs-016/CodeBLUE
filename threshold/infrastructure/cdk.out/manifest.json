@@ -1,0 +1,437 @@
+{
+  "version": "36.0.0",
+  "artifacts": {
+    "ThresholdStack.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "ThresholdStack.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "ThresholdStack": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://140219385716/us-west-2",
+      "properties": {
+        "templateFile": "ThresholdStack.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::140219385716:role/cdk-hnb659fds-deploy-role-140219385716-us-west-2",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::140219385716:role/cdk-hnb659fds-cfn-exec-role-140219385716-us-west-2",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-140219385716-us-west-2/7adfffd1a3a22d7a6250a9d644517306ba65f43b77d6baaadb8472aad5c1c33f.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "ThresholdStack.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::140219385716:role/cdk-hnb659fds-lookup-role-140219385716-us-west-2",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "ThresholdStack.assets"
+      ],
+      "metadata": {
+        "/ThresholdStack/ThresholdVpc/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcD2D31DCD"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PublicSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPublicSubnet1SubnetFE036783"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PublicSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPublicSubnet1RouteTable1CA0119D"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PublicSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPublicSubnet1RouteTableAssociation56EEFDA3"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PublicSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPublicSubnet1DefaultRoute2AAEDF84"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PublicSubnet1/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPublicSubnet1EIP1B5A3390"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PublicSubnet1/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPublicSubnet1NATGatewayAADBB54B"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PublicSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPublicSubnet2SubnetF84F232F"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PublicSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPublicSubnet2RouteTable99790D83"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PublicSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPublicSubnet2RouteTableAssociation769FDF14"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PublicSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPublicSubnet2DefaultRoute0887A7D9"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PublicSubnet2/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPublicSubnet2EIP6E3A6902"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PublicSubnet2/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPublicSubnet2NATGateway5C1CB2D6"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PrivateSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPrivateSubnet1Subnet3CFD9D23"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PrivateSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPrivateSubnet1RouteTableA86ABFC0"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PrivateSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPrivateSubnet1RouteTableAssociation9C52F8BC"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PrivateSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPrivateSubnet1DefaultRoute2E0B674D"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PrivateSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPrivateSubnet2Subnet108FEBEB"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PrivateSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPrivateSubnet2RouteTableF0C2F99C"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PrivateSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPrivateSubnet2RouteTableAssociation85E8E592"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/PrivateSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcPrivateSubnet2DefaultRoute896EC0EB"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/IGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcIGWAEE922E1"
+          }
+        ],
+        "/ThresholdStack/ThresholdVpc/VPCGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdVpcVPCGW75BE59A4"
+          }
+        ],
+        "/ThresholdStack/ThresholdDataLake/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdDataLakeA959A475"
+          }
+        ],
+        "/ThresholdStack/ThresholdDataLake/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdDataLakePolicyF477EF96"
+          }
+        ],
+        "/ThresholdStack/ThresholdDataLake/AutoDeleteObjectsCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdDataLakeAutoDeleteObjectsCustomResource19408674"
+          }
+        ],
+        "/ThresholdStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
+          }
+        ],
+        "/ThresholdStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F"
+          }
+        ],
+        "/ThresholdStack/ThresholdDLQ/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdDLQ67D3C496"
+          }
+        ],
+        "/ThresholdStack/ValidationLambda/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ValidationLambdaServiceRoleC65F14AB"
+          }
+        ],
+        "/ThresholdStack/ValidationLambda/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ValidationLambdaServiceRoleDefaultPolicyF69C66E3"
+          }
+        ],
+        "/ThresholdStack/ValidationLambda/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ValidationLambda6B331F4E"
+          }
+        ],
+        "/ThresholdStack/ThresholdSecrets/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdSecrets1555855D"
+          }
+        ],
+        "/ThresholdStack/ThresholdCluster/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdClusterBBCF1A92"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/LB/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendLB19C25979"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/LB/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendLBSecurityGroupF13388C3"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/LB/SecurityGroup/to ThresholdStackThresholdBackendServiceSecurityGroupDFFB986A:8000": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendLBSecurityGrouptoThresholdStackThresholdBackendServiceSecurityGroupDFFB986A80003F40E035"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/LB/PublicListener/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendLBPublicListenerCAAA38D5"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/LB/PublicListener/ECSGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendLBPublicListenerECSGroup48A027CB"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/LoadBalancerDNS": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendLoadBalancerDNSB668E26B"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/ServiceURL": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendServiceURL4617D09B"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/TaskDef/TaskRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendTaskDefTaskRole97C4D720"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/TaskDef/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendTaskDef17A7D393"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/TaskDef/web/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendTaskDefwebLogGroupAD49DB93"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/TaskDef/ExecutionRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendTaskDefExecutionRoleE214EBF7"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/TaskDef/ExecutionRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendTaskDefExecutionRoleDefaultPolicyF2DE3B67"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/Service/Service": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendService3A0E20AC"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/Service/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendServiceSecurityGroupB3A02BAA"
+          }
+        ],
+        "/ThresholdStack/ThresholdBackend/Service/SecurityGroup/from ThresholdStackThresholdBackendLBSecurityGroup30D1C3B3:8000": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdBackendServiceSecurityGroupfromThresholdStackThresholdBackendLBSecurityGroup30D1C3B3800002746A9D"
+          }
+        ],
+        "/ThresholdStack/ThresholdFrontend/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdFrontend87C39D2D"
+          }
+        ],
+        "/ThresholdStack/ThresholdFrontend/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdFrontendPolicy46E5D3EE"
+          }
+        ],
+        "/ThresholdStack/ThresholdFrontend/AutoDeleteObjectsCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdFrontendAutoDeleteObjectsCustomResource41D2EE15"
+          }
+        ],
+        "/ThresholdStack/DeployFrontend/AwsCliLayer/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DeployFrontendAwsCliLayerD774ED8F"
+          }
+        ],
+        "/ThresholdStack/DeployFrontend/CustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DeployFrontendCustomResource3E02C3B7"
+          }
+        ],
+        "/ThresholdStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265"
+          }
+        ],
+        "/ThresholdStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF"
+          }
+        ],
+        "/ThresholdStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536"
+          }
+        ],
+        "/ThresholdStack/ThresholdModelConfig": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdModelConfig"
+          }
+        ],
+        "/ThresholdStack/ThresholdEndpointConfig": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdEndpointConfig"
+          }
+        ],
+        "/ThresholdStack/ThresholdSageMakerEndpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ThresholdSageMakerEndpoint"
+          }
+        ],
+        "/ThresholdStack/BackendAPIUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendAPIUrl"
+          }
+        ],
+        "/ThresholdStack/FrontendUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendUrl"
+          }
+        ],
+        "/ThresholdStack/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/ThresholdStack/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/ThresholdStack/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "ThresholdStack"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  }
+}
