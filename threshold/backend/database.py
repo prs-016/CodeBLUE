@@ -7,6 +7,7 @@ from contextlib import contextmanager
 logger = logging.getLogger(__name__)
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Iterator
+import urllib.parse
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
@@ -17,8 +18,13 @@ def _get_engine():
     if settings.snowflake_account and settings.snowflake_user:
         try:
             print("Sponsor Integration Active: Establishing dynamic connection to Snowflake Warehouse...")
-            snowflake_url = f"snowflake://{settings.snowflake_user}:{settings.snowflake_password}@{settings.snowflake_account}/{settings.snowflake_database}/{settings.snowflake_schema}"
-            return create_engine(snowflake_url, future=True)
+            safe_password = urllib.parse.quote_plus(settings.snowflake_password)
+            snowflake_url = f"snowflake://{settings.snowflake_user}:{safe_password}@{settings.snowflake_account}/{settings.snowflake_database}/{settings.snowflake_schema}"
+            eng = create_engine(snowflake_url, future=True)
+            # Force connection to test credentials immediately
+            with eng.connect() as test_conn:
+                pass
+            return eng
         except Exception as e:
             print(f"Warning: Snowflake connection failed, falling back to SQLite. Error: {e}")
             
@@ -382,6 +388,10 @@ def session_scope() -> Iterator[Session]:
 
 def init_db() -> None:
     with engine.begin() as conn:
+        if conn.dialect.name == "snowflake":
+            print("Connected to Snowflake Warehouse: bypassing local table provisioning...")
+            return
+
         conn.execute(
             text(
                 """
