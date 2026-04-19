@@ -1,0 +1,21 @@
+# THRESHOLD — Brev.dev launchable config
+# Run: brev open threshold-train  (or paste this file into brev.dev/new)
+name: threshold-train
+instance: g4dn.xlarge        # NVIDIA T4 GPU — cheapest with CUDA 12+
+image: nvcr.io/nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
+
+ports:
+  - 8888:8888                # JupyterLab
+
+setup: |
+  apt-get update -q && apt-get install -y -q python3-pip git
+  pip install -q jupyterlab
+  jupyter lab --ip=0.0.0.0 --no-browser --allow-root &
+
+env:
+  SNOWFLAKE_USER: PRS016
+  SNOWFLAKE_ACCOUNT: TWBDGDJ-KWB81325
+  SNOWFLAKE_DATABASE: THRESHOLD_DB
+  SNOWFLAKE_SCHEMA: PUBLIC
+  SNOWFLAKE_WAREHOUSE: COMPUTE_WH
+  # SNOWFLAKE_PASSWORD: <set in Brev secrets, never hardcode>

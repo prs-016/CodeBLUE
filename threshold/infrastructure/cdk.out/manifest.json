@@ -18,7 +18,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::140219385716:role/cdk-hnb659fds-deploy-role-140219385716-us-west-2",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::140219385716:role/cdk-hnb659fds-cfn-exec-role-140219385716-us-west-2",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-140219385716-us-west-2/7adfffd1a3a22d7a6250a9d644517306ba65f43b77d6baaadb8472aad5c1c33f.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-140219385716-us-west-2/80ac2c91c02eafd36144e67795a0e8317db2d18a66651082f0a1399a0c36e985.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -374,24 +374,6 @@
           {
             "type": "aws:cdk:logicalId",
             "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536"
-          }
-        ],
-        "/ThresholdStack/ThresholdModelConfig": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "ThresholdModelConfig"
-          }
-        ],
-        "/ThresholdStack/ThresholdEndpointConfig": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "ThresholdEndpointConfig"
-          }
-        ],
-        "/ThresholdStack/ThresholdSageMakerEndpoint": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "ThresholdSageMakerEndpoint"
           }
         ],
         "/ThresholdStack/BackendAPIUrl": [

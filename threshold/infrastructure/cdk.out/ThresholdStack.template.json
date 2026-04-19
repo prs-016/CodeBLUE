@@ -894,7 +894,7 @@
      {
       "Essential": true,
       "Image": {
-       "Fn::Sub": "140219385716.dkr.ecr.us-west-2.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-140219385716-us-west-2:fbe008a5b374d4dce277127df2eca93cec6aa537719e5d5a855e4444314d959a"
+       "Fn::Sub": "140219385716.dkr.ecr.us-west-2.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-140219385716-us-west-2:176bb18cff274b70ac3ebf63b3ded12e0bf22196e155ca16a3f522a66bc75711"
       },
       "LogConfiguration": {
        "LogDriver": "awslogs",
@@ -924,6 +924,34 @@
             "Ref": "ThresholdSecrets1555855D"
            },
            ":STRIPE_SECRET_KEY::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "GEMINI_API_KEY",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "ThresholdSecrets1555855D"
+           },
+           ":GEMINI_API_KEY::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "ELEVENLABS_API_KEY",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "ThresholdSecrets1555855D"
+           },
+           ":ELEVENLABS_API_KEY::"
           ]
          ]
         }
@@ -1315,7 +1343,7 @@
      "cdk-hnb659fds-assets-140219385716-us-west-2"
     ],
     "SourceObjectKeys": [
-     "9e1a8c300215eee026f42e2b886b2d7dde63ca32c9cab142bde95345ebfaeeb1.zip"
+     "baac22bb25a97b76803da918a4047f5d151ff42be490eec37d3276f15fa9d659.zip"
     ],
     "DestinationBucketName": {
      "Ref": "ThresholdFrontend87C39D2D"
@@ -1490,78 +1518,10 @@
     "aws:asset:property": "Code"
    }
   },
-  "ThresholdModelConfig": {
-   "Type": "AWS::SageMaker::Model",
-   "Properties": {
-    "ExecutionRoleArn": {
-     "Fn::GetAtt": [
-      "ValidationLambdaServiceRoleC65F14AB",
-      "Arn"
-     ]
-    },
-    "PrimaryContainer": {
-     "Image": "763104351884.dkr.ecr.us-west-2.amazonaws.com/pytorch-inference:1.12.0-cpu-py38",
-     "Mode": "SingleModel",
-     "ModelDataUrl": {
-      "Fn::Join": [
-       "",
-       [
-        "s3://",
-        {
-         "Ref": "ThresholdDataLakeA959A475"
-        },
-        "/ml/threshold_net_best.tar.gz"
-       ]
-      ]
-     }
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "ThresholdStack/ThresholdModelConfig"
-   }
-  },
-  "ThresholdEndpointConfig": {
-   "Type": "AWS::SageMaker::EndpointConfig",
-   "Properties": {
-    "ProductionVariants": [
-     {
-      "InitialVariantWeight": 1,
-      "ModelName": {
-       "Fn::GetAtt": [
-        "ThresholdModelConfig",
-        "ModelName"
-       ]
-      },
-      "ServerlessConfig": {
-       "MaxConcurrency": 5,
-       "MemorySizeInMB": 2048
-      },
-      "VariantName": "AllTraffic"
-     }
-    ]
-   },
-   "Metadata": {
-    "aws:cdk:path": "ThresholdStack/ThresholdEndpointConfig"
-   }
-  },
-  "ThresholdSageMakerEndpoint": {
-   "Type": "AWS::SageMaker::Endpoint",
-   "Properties": {
-    "EndpointConfigName": {
-     "Fn::GetAtt": [
-      "ThresholdEndpointConfig",
-      "EndpointConfigName"
-     ]
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "ThresholdStack/ThresholdSageMakerEndpoint"
-   }
-  },
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31T227bMAz9lr6r2ppiH5CmFwToNi8p+howMuNykSVPpBIYhv99kOzEaXd54jlHFH1E0jN9c/tFf76CI1+bcn9taau7tYDZKzjypkMz091rY9Ri516LhSri1pJZx61DSdqEVj4KvsDW4qRP2pzZGwIh787JCTwsixS+gTyB4BFaVQQ6gOBUeOkEg8NzwuBkZHMRMG81OlFrNDGQtE/BxyZ7+K/wUAVk/kNeuqz3im91dxfNfjAxoiEU3pJpJ3nkA7kDxl7xL9bdj4gxvzKDXlmotyXo7jE6c+rEJX6GFsMrBk58Ta6yKP6c0SuCWncrP3Q4x8nJgJLtTQfMKKznKagSG+vb1CE9GLw/C71iNAGFa3BQYdDdOvOxKQGlV2hYdwsbWTAk/QQfIVSQhsv7e9yRo9MjPireCZDDcKGNd9cYDmSGdRlg/tymAUkTZz1vGksmL82zh/IOLDiD5YfraIGFjPVQbnMGueow093fb+dHvOOXecSCbsw54YvzFwgVynmfLmhyHjZj4++92WNY1lDhMAM0Qa+w8UziQ5s2RFlfse6efXWudsK9Yqiwhn0ayGLnvvoSbf5XXNl4crLwbkfVpdL3aoXsY0jdjCy+nujO/eOoCP5AJYZsJ/tcC1TkcuXvUZoo48ZubFrMDRzZWNLzIy8s5V3tVdHKm3efbvXNjZ5d/WSi6xCdUI16NcTf39uuh2IEAAA="
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31S227bMAz9lr6r2ppiH5CmFwQoNi8u+howMutykSVPpBIYhv99kOzEWXd54jlHJEVRZ6Fvbr/oz1dw5GtT7a8t7XRfCpi9giNvezQL3b+2Rq3e3GuxUkXcWTJl3DmUpM1o46PgC+wszvqsLZm9IRDy7pycwMO6SOEryBMIHqFTRaADCM6N104wODwnjJNMbCkC5r1BJ6pEEwNJ9xR8bPMM/xUe6oDMf8hrl/VB8a3u76LZj0NMaAyFt2S6WZ74SO6AcVD8k3X/PWLMr8xgUBaaXQW6f4zOnDZxiZ+hw/CKgRMvydUWxZ8zBkXQ6H7jxw3nOE8yojT2tgdmFNbLFFSFrfVd2pAeB7w/C4NiNAGFG3BQY9B9mfm0lIAyKDSs+5WNLBiSfoKPEGpIn8v7e3wjR6dHfFS8EyCH4UKbaksMBzKjXUaYr9u2IOnHWS/b1pLJpnn2UN2BBWew+lCOFljIWA/VLmeQqw8L3f+9Oj/iN36ZRyzoppwTvjh/gVCjnP10QdPkYTst/t6bPYZ1AzWOf4Am6A22nkl86JJDlPU16/7Z1+duJzwMaoPsY0iriSy+memb+8dREfyBKgy5d760FKjJ1anmW5Q2ymS/rU0u28KRjSW9PPLKUjbeoIpO3r37dKtvbvTi6gcTXYfohBrUmzH+AnlPvnAvBAAA"
    },
    "Metadata": {
     "aws:cdk:path": "ThresholdStack/CDKMetadata/Default"

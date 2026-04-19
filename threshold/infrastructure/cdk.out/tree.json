@@ -1303,7 +1303,7 @@
                           {
                             "essential": true,
                             "image": {
-                              "Fn::Sub": "140219385716.dkr.ecr.us-west-2.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-140219385716-us-west-2:fbe008a5b374d4dce277127df2eca93cec6aa537719e5d5a855e4444314d959a"
+                              "Fn::Sub": "140219385716.dkr.ecr.us-west-2.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-140219385716-us-west-2:176bb18cff274b70ac3ebf63b3ded12e0bf22196e155ca16a3f522a66bc75711"
                             },
                             "name": "web",
                             "portMappings": [
@@ -1333,6 +1333,34 @@
                                         "Ref": "ThresholdSecrets1555855D"
                                       },
                                       ":STRIPE_SECRET_KEY::"
+                                    ]
+                                  ]
+                                }
+                              },
+                              {
+                                "name": "GEMINI_API_KEY",
+                                "valueFrom": {
+                                  "Fn::Join": [
+                                    "",
+                                    [
+                                      {
+                                        "Ref": "ThresholdSecrets1555855D"
+                                      },
+                                      ":GEMINI_API_KEY::"
+                                    ]
+                                  ]
+                                }
+                              },
+                              {
+                                "name": "ELEVENLABS_API_KEY",
+                                "valueFrom": {
+                                  "Fn::Join": [
+                                    "",
+                                    [
+                                      {
+                                        "Ref": "ThresholdSecrets1555855D"
+                                      },
+                                      ":ELEVENLABS_API_KEY::"
                                     ]
                                   ]
                                 }
@@ -2192,89 +2220,6 @@
             },
             "constructInfo": {
               "fqn": "aws-cdk-lib.aws_lambda.Function",
-              "version": "2.135.0"
-            }
-          },
-          "ThresholdModelConfig": {
-            "id": "ThresholdModelConfig",
-            "path": "ThresholdStack/ThresholdModelConfig",
-            "attributes": {
-              "aws:cdk:cloudformation:type": "AWS::SageMaker::Model",
-              "aws:cdk:cloudformation:props": {
-                "executionRoleArn": {
-                  "Fn::GetAtt": [
-                    "ValidationLambdaServiceRoleC65F14AB",
-                    "Arn"
-                  ]
-                },
-                "primaryContainer": {
-                  "image": "763104351884.dkr.ecr.us-west-2.amazonaws.com/pytorch-inference:1.12.0-cpu-py38",
-                  "mode": "SingleModel",
-                  "modelDataUrl": {
-                    "Fn::Join": [
-                      "",
-                      [
-                        "s3://",
-                        {
-                          "Ref": "ThresholdDataLakeA959A475"
-                        },
-                        "/ml/threshold_net_best.tar.gz"
-                      ]
-                    ]
-                  }
-                }
-              }
-            },
-            "constructInfo": {
-              "fqn": "aws-cdk-lib.aws_sagemaker.CfnModel",
-              "version": "2.135.0"
-            }
-          },
-          "ThresholdEndpointConfig": {
-            "id": "ThresholdEndpointConfig",
-            "path": "ThresholdStack/ThresholdEndpointConfig",
-            "attributes": {
-              "aws:cdk:cloudformation:type": "AWS::SageMaker::EndpointConfig",
-              "aws:cdk:cloudformation:props": {
-                "productionVariants": [
-                  {
-                    "variantName": "AllTraffic",
-                    "initialVariantWeight": 1,
-                    "modelName": {
-                      "Fn::GetAtt": [
-                        "ThresholdModelConfig",
-                        "ModelName"
-                      ]
-                    },
-                    "serverlessConfig": {
-                      "maxConcurrency": 5,
-                      "memorySizeInMb": 2048
-                    }
-                  }
-                ]
-              }
-            },
-            "constructInfo": {
-              "fqn": "aws-cdk-lib.aws_sagemaker.CfnEndpointConfig",
-              "version": "2.135.0"
-            }
-          },
-          "ThresholdSageMakerEndpoint": {
-            "id": "ThresholdSageMakerEndpoint",
-            "path": "ThresholdStack/ThresholdSageMakerEndpoint",
-            "attributes": {
-              "aws:cdk:cloudformation:type": "AWS::SageMaker::Endpoint",
-              "aws:cdk:cloudformation:props": {
-                "endpointConfigName": {
-                  "Fn::GetAtt": [
-                    "ThresholdEndpointConfig",
-                    "EndpointConfigName"
-                  ]
-                }
-              }
-            },
-            "constructInfo": {
-              "fqn": "aws-cdk-lib.aws_sagemaker.CfnEndpoint",
               "version": "2.135.0"
             }
           },
