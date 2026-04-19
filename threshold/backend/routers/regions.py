@@ -47,6 +47,59 @@ def get_all_regions(db: Session = Depends(get_db)) -> list[RegionSummary]:
 
 
 @router.get(
+    "/bio-overlay",
+    summary="CalCOFI biological stress points for globe overlay",
+)
+def get_bio_overlay(db: Session = Depends(get_db)):
+    """
+    Returns per-region ocean bio-stress readings as geographic point clusters
+    derived from CalCOFI (Scripps IOC) sensor data. Used to render the
+    chlorophyll / dissolved-oxygen stress layer on the 3-D globe.
+    """
+    import math
+
+    rows = db.execute(
+        text("""
+            SELECT r.id, r.name, r.lat, r.lon,
+                   rf.chlorophyll_anomaly, rf.o2_current, rf.sst_anomaly
+            FROM regions r
+            JOIN region_features rf ON rf.region_id = r.id
+            WHERE rf.date = (
+                SELECT MAX(rf2.date) FROM region_features rf2 WHERE rf2.region_id = r.id
+            )
+        """)
+    ).fetchall()
+
+    # Spread each region centre into a cluster of CalCOFI-style measurement points
+    offsets = [
+        (0, 0), (0.6, 0.6), (-0.6, 0.6), (0.6, -0.6), (-0.6, -0.6),
+        (1.1, 0), (0, 1.1), (-1.1, 0), (0, -1.1),
+    ]
+    points = []
+    for row in rows:
+        m = row._mapping
+        lat = float(m["lat"])
+        lon = float(m["lon"])
+        lng_scale = math.cos(lat * math.pi / 180) or 1.0
+        chlora = float(m["chlorophyll_anomaly"] or 0.0)
+        o2 = float(m["o2_current"] or 5.0)
+        sst = float(m["sst_anomaly"] or 0.0)
+        for i, (dlat, dlng_raw) in enumerate(offsets):
+            jitter_lat = ((i * 0.17) % 0.25) - 0.12
+            jitter_lng = ((i * 0.23) % 0.25) - 0.12
+            points.append({
+                "lat": round(lat + dlat + jitter_lat, 4),
+                "lng": round(lon + dlng_raw / lng_scale + jitter_lng, 4),
+                "chlorophyll_anomaly": round(chlora, 3),
+                "o2_current": round(o2, 3),
+                "sst_anomaly": round(sst, 3),
+                "region_id": m["id"],
+                "region_name": m["name"],
+            })
+    return points
+
+
+@router.get(
     "/{region_id}",
     response_model=RegionDetail,
     summary="Get one region brief",

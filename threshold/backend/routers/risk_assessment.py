@@ -13,7 +13,7 @@ from models.risk_assessment import (
     RiskAssessmentRequest,
     WeatherSummary,
 )
-from services.disaster_inference import infer_disaster
+from services.disaster_inference import infer_disaster, PIN_COLORS
 from services.gdelt_service import get_headlines
 from services.geocoding_service import reverse_geocode
 from services.nyne_service import search_relief_orgs
@@ -40,7 +40,15 @@ async def risk_quick(req: RiskAssessmentRequest) -> QuickRiskResponse:
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Weather fetch failed: {exc}") from exc
 
-    disaster_raw = infer_disaster(weather_raw)
+    if geo.get("is_ocean"):
+        disaster_raw = {
+            "disaster_type": "none",
+            "risk_level": "low",
+            "trigger_factors": ["open ocean — land disaster metrics not applicable"],
+            "pin_color": PIN_COLORS["low"],
+        }
+    else:
+        disaster_raw = infer_disaster(weather_raw)
 
     return QuickRiskResponse(
         region_name=geo["region_name"],
@@ -69,12 +77,33 @@ async def risk_enrich(req: RiskAssessmentRequest) -> EnrichRiskResponse:
         weather_raw = await get_weather(req.lat, req.lon)
     except Exception:
         weather_raw = {}
-    disaster_raw = infer_disaster(weather_raw)
+
+    is_ocean = geo.get("is_ocean", False)
+    if is_ocean:
+        disaster_raw = {
+            "disaster_type": "none",
+            "risk_level": "low",
+            "trigger_factors": ["open ocean — land disaster metrics not applicable"],
+            "pin_color": PIN_COLORS["low"],
+        }
+    else:
+        disaster_raw = infer_disaster(weather_raw)
     disaster_type = disaster_raw["disaster_type"]
     region_name = geo["region_name"]
 
+    if is_ocean:
+        return EnrichRiskResponse(
+            region_name=region_name,
+            lat=req.lat,
+            lon=req.lon,
+            disaster_type="none",
+            headlines=[],
+            charities=[],
+            errors={"news": None, "charities": None},
+        )
+
     from services.gemini_service import search_charities
-    
+
     # Fire news + charities in parallel (Hybrid: Orthogonal + Gemini)
     results = await asyncio.gather(
         get_headlines(region_name, disaster_type),

@@ -2,7 +2,7 @@ import { X } from "lucide-react";
 import RiskCardSkeleton from "./RiskCardSkeleton";
 
 const RISK_LABELS = { low: "LOW", medium: "MEDIUM", high: "HIGH", critical: "CRITICAL" };
-const DISASTER_ICONS = { flood: "🌊", wildfire: "🔥", drought: "☀️", storm: "⛈️", none: "🌍" };
+const DISASTER_ICONS = { flood: "🌊", wildfire: "🔥", drought: "☀️", storm: "⛈️", marine: "🐋", none: "🌍" };
 
 export default function RiskCard({ quick, enrich, loadingQuick, loadingEnrich, onClose }) {
   if (loadingQuick) {
@@ -100,7 +100,7 @@ export default function RiskCard({ quick, enrich, loadingQuick, loadingEnrich, o
           </ul>
         ) : (
           <p className="text-xs text-grey-mid italic">
-            {enrich?.errors?.news ? "Headlines unavailable" : "No recent coverage found"}
+            {enrich?.errors?.news ? "Headlines unavailable" : country === "N/A" ? "Open ocean — no land coverage" : "No recent coverage found"}
           </p>
         )}
       </div>
@@ -127,7 +127,7 @@ export default function RiskCard({ quick, enrich, loadingQuick, loadingEnrich, o
           </div>
         ) : (
           <p className="text-xs text-grey-mid italic">
-            {enrich?.errors?.charities ? "Charity lookup failed" : "No organizations found"}
+            {enrich?.errors?.charities ? "Charity lookup failed" : country === "N/A" ? "Click a coastal region to find relief orgs" : "No organizations found"}
           </p>
         )}
       </div>

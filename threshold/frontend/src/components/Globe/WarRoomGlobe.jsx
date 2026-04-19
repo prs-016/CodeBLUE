@@ -2,12 +2,15 @@ import React, { useEffect, useRef, useState, useMemo, useCallback } from "react"
 import { useNavigate } from "react-router-dom";
 import { useTsunamis } from "../../hooks";
 
+const API_BASE = (typeof import.meta !== "undefined" && import.meta?.env?.VITE_API_URL) || "http://localhost:8000";
+
 export default function WarRoomGlobe({ regions, onAssess }) {
   const globeRef    = useRef(null);
   const containerRef = useRef(null);
   const navigate    = useNavigate();
   const { tsunamis } = useTsunamis();
   const [currentYear, setCurrentYear] = useState(null);
+  const [bioPoints, setBioPoints] = useState([]);
 
   // Stable refs — handlers inside the one-time globe init always see latest values
   const onAssessRef  = useRef(onAssess);
@@ -16,7 +19,22 @@ export default function WarRoomGlobe({ regions, onAssess }) {
   useEffect(() => { navigateRef.current  = navigate;  }, [navigate]);
 
   // Latest data ref — init callback reads this after globe is created
-  const dataRef = useRef({ regionRings: [], tsunamis: [], currentYear: null });
+  const dataRef = useRef({ regionRings: [], tsunamis: [], currentYear: null, bioPoints: [] });
+
+  // ── Fetch CalCOFI / Scripps bio-stress overlay once ───────────────────────
+  useEffect(() => {
+    fetch(`${API_BASE}/api/v1/regions/bio-overlay`)
+      .then(r => r.ok ? r.json() : [])
+      .then(raw => {
+        const pts = raw.map(p => ({
+          ...p,
+          color: bioPointColor(p.chlorophyll_anomaly),
+          radius: Math.max(0.18, Math.min(0.7, 0.18 + Math.abs(p.chlorophyll_anomaly) * 0.28)),
+        }));
+        setBioPoints(pts);
+      })
+      .catch(() => {});
+  }, []);
 
   // ── Year animation ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -74,7 +92,10 @@ export default function WarRoomGlobe({ regions, onAssess }) {
   // ── Core function: push current data into the globe instance ─────────────
   const pushData = useCallback((globe) => {
     if (!globe) return;
-    const { regionRings: rr, tsunamis: allT, currentYear: cy } = dataRef.current;
+    const { regionRings: rr, tsunamis: allT, currentYear: cy, bioPoints: bp } = dataRef.current;
+
+    // CalCOFI / Scripps bio-stress overlay (chlorophyll anomaly as glowing points)
+    globe.pointsData(bp || []);
 
     const activeTsunamis = cy !== null
       ? allT.filter(t => Math.abs(t.year - cy) <= 1).map(t => ({
@@ -83,14 +104,16 @@ export default function WarRoomGlobe({ regions, onAssess }) {
         }))
       : [];
 
-    // Expand regions with score >= 4 into a cluster of 7 red rings!
-    // The center ring + 6 immediate neighbors to form that intense localized cluster.
+    // Expand regions with score >= 4 into a cluster of 7 rings
     const clusterRings = [];
     rr.forEach(r => {
-      const score = r.threshold_proximity_score || 0;
+      const score = Math.min(10, Math.max(0, r.threshold_proximity_score || 0));
+      // Extreme hue scale: 0 = Hue 170 (Teal), ~2.8 = Hue 0 (Red)
+      const hue = Math.max(0, Math.round(170 - (score * 60)));
+      
       if (score >= 4) {
-        // Center ring (solid red, high propagation speed)
-        clusterRings.push({ ...r, color: (t) => `rgba(255,0,0,${1 - t})`, maxR: r.maxR });
+        // Center ring (dynamic severity color)
+        clusterRings.push({ ...r, color: (t) => `hsla(${hue}, 100%, 50%, ${1 - t})`, maxR: r.maxR });
         
         // 6 immediate neighbors to form the surrounding cluster inside a circle
         const d = 1.6; // distance in degrees
@@ -103,12 +126,12 @@ export default function WarRoomGlobe({ regions, onAssess }) {
             maxR: r.maxR * 0.75, // slightly smaller neighbor rings
             propagationSpeed: r.propagationSpeed * 0.9,
             repeatPeriod: r.repeatPeriod,
-            color: (t) => `rgba(255,0,0,${0.8 - t})` // intensely red
+            color: (t) => `hsla(${hue}, 100%, 50%, ${Math.max(0, 0.8 - t)})` // identical severity hue
           });
         }
       } else {
-        // Keep normal styling for low severity
-        clusterRings.push(r);
+        // Low severity uses the same dynamic scale
+        clusterRings.push({ ...r, color: (t) => `hsla(${hue}, 100%, 50%, ${1 - t})`});
       }
     });
 
@@ -131,13 +154,53 @@ export default function WarRoomGlobe({ regions, onAssess }) {
 
     // Labels only for high-risk regions
     globe.labelsData(rr.filter(r => (r.threshold_proximity_score || 0) >= 5));
+
+    // Paint Land using dynamic severity map
+    globe.hexPolygonColor((d) => {
+      if (!rr.length || !d.geometry || !d.geometry.coordinates) return "rgba(20, 189, 172, 0.15)";
+      
+      const coords = d.geometry.coordinates;
+      const firstPoly = Array.isArray(coords[0][0][0]) ? coords[0][0] : coords[0];
+      
+      let minX=180, maxX=-180, minY=90, maxY=-90;
+      const step = Math.max(1, Math.floor(firstPoly.length / 50));
+      for(let i=0; i<firstPoly.length; i+=step) {
+        const pt = firstPoly[i];
+        if(pt[0]<minX) minX=pt[0];
+        if(pt[0]>maxX) maxX=pt[0];
+        if(pt[1]<minY) minY=pt[1];
+        if(pt[1]>maxY) maxY=pt[1];
+      }
+      const cLng = (minX+maxX)/2;
+      const cLat = (minY+maxY)/2;
+
+      let maxEffectScore = 0;
+      rr.forEach(r => {
+        const dLat = (r.lat - cLat);
+        const dLng = (r.lng - cLng);
+        const dist = Math.sqrt(dLat*dLat + dLng*dLng);
+        // Blend radius ~35 degrees (~3500km)
+        if (dist < 35) {
+          const decay = Math.max(0, 1 - (dist / 35));
+          // Squareroot decay pushes the severity effect further inland
+          const effect = (r.threshold_proximity_score || 0) * Math.sqrt(decay);
+          if (effect > maxEffectScore) maxEffectScore = effect;
+        }
+      });
+
+      if (maxEffectScore < 1.0) return "rgba(20, 189, 172, 0.15)";
+      
+      const score = Math.min(10, Math.max(0, maxEffectScore));
+      const hue = Math.max(0, Math.round(170 - (score * 60)));
+      return `hsla(${hue}, 100%, 50%, ${Math.max(0.15, score * 0.15)})`;
+    });
   }, []);
 
   // ── Keep data ref in sync, then push to globe ─────────────────────────────
   useEffect(() => {
-    dataRef.current = { regionRings, tsunamis: allTsunamiRings, currentYear };
+    dataRef.current = { regionRings, tsunamis: allTsunamiRings, currentYear, bioPoints };
     pushData(globeRef.current);
-  }, [regionRings, allTsunamiRings, currentYear, pushData]);
+  }, [regionRings, allTsunamiRings, currentYear, bioPoints, pushData]);
 
   // ── Globe initialisation (once) ───────────────────────────────────────────
   useEffect(() => {
@@ -174,6 +237,14 @@ export default function WarRoomGlobe({ regions, onAssess }) {
         .ringMaxRadius("maxR")
         .ringPropagationSpeed("propagationSpeed")
         .ringRepeatPeriod("repeatPeriod")
+        // CalCOFI / Scripps bio-stress points
+        .pointsData([])
+        .pointLat("lat")
+        .pointLng("lng")
+        .pointColor("color")
+        .pointRadius("radius")
+        .pointAltitude(0.008)
+        .pointsMerge(false)
         // Labels
         .labelLat("lat")
         .labelLng("lng")
@@ -229,13 +300,23 @@ export default function WarRoomGlobe({ regions, onAssess }) {
 }
 
 // ── Color helpers ─────────────────────────────────────────────────────────────
-function ringColorFn(score, threat = "thermal") {
-  // User requested anything moderate/high (not low) to light up bright red
-  if (score >= 4) return (t) => `rgba(255,0,0,${1 - t})`;
+function ringColorFn(score) {
+  const boundedScore = Math.min(10, Math.max(0, score || 0));
+  const hue = Math.max(0, Math.round(170 - (boundedScore * 60)));
+  return (t) => `hsla(${hue}, 100%, 50%, ${1 - t})`;
+}
 
-  // Low severity fallback colors
-  if (threat === "acidification") return (t) => `rgba(0,230,200,${1 - t})`;
-  if (threat === "hypoxia")       return (t) => `rgba(170,90,255,${1 - t})`;
-  return                                 (t) => `rgba(20,180,170,${1 - t})`;
+/**
+ * Map chlorophyll anomaly to a glowing point colour for the Scripps overlay.
+ *   ≤ 0   : teal   — baseline / healthy
+ *   0–0.6 : lime   — slight bloom
+ *   0.6–1.4: yellow — moderate stress
+ *   > 1.4  : orange-red — high phytoplankton anomaly / dead-zone risk
+ */
+function bioPointColor(chlorA) {
+  if (chlorA <= 0)   return "rgba(20, 189, 172, 0.45)";
+  if (chlorA <= 0.6) return "rgba(110, 230, 80, 0.60)";
+  if (chlorA <= 1.4) return "rgba(255, 195, 40, 0.70)";
+  return "rgba(255, 90, 30, 0.80)";
 }
 

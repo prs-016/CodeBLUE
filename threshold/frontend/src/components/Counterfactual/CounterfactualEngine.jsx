@@ -2,6 +2,31 @@ import React, { useEffect, useMemo, useState } from "react";
 import useCounterfactual from "../../hooks/useCounterfactual";
 import TimelineScrubber from "./TimelineScrubber";
 
+function DataSourceCell({ value }) {
+  if (!value) return null;
+  // Split on the first URL (http/https) found in the string
+  const urlMatch = value.match(/(https?:\/\/\S+)/);
+  if (!urlMatch) {
+    return <div className="mt-2 text-sm text-white leading-snug">{value}</div>;
+  }
+  const url = urlMatch[1];
+  const label = value.slice(0, value.indexOf(url)).replace(/:?\s*$/, "").trim();
+  return (
+    <div className="mt-2 space-y-1.5">
+      {label && <div className="text-sm text-white leading-snug">{label}</div>}
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block truncate font-mono text-[10px] text-teal-light hover:text-white transition-colors"
+        title={url}
+      >
+        {url}
+      </a>
+    </div>
+  );
+}
+
 function formatMoney(value) {
   if (value >= 1000000000) {
     return `$${(value / 1000000000).toFixed(1)}B`;
@@ -88,7 +113,7 @@ export default function CounterfactualEngine({
         </div>
         <div className="rounded-[24px] border border-grey-dark/70 bg-white/[0.03] p-5">
           <div className="text-xs uppercase tracking-[0.2em] text-grey-mid">Data source</div>
-          <div className="mt-2 text-lg text-white">{activeCase?.data_source}</div>
+          <DataSourceCell value={activeCase?.data_source} />
         </div>
       </section>
     </div>

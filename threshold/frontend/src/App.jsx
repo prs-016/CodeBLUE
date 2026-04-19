@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import Navbar from "./components/shared/Navbar";
+import TourNarrator from "./components/Tour/TourNarrator";
 import CounterfactualPage from "./pages/CounterfactualPage";
 import FundPage from "./pages/FundPage";
 import FundingGapPage from "./pages/FundingGapPage";
@@ -24,6 +25,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
+        <TourNarrator />
       </div>
     </BrowserRouter>
   );

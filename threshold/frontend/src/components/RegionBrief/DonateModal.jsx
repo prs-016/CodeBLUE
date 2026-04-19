@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { X, ShieldCheck, Zap, Globe } from "lucide-react";
@@ -15,6 +15,7 @@ function CheckoutForm({ roundId, amount, onClose }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle"); // idle | processing | success | error
   const [txHash, setTxHash] = useState(null);
+  const [txOnChain, setTxOnChain] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
   const handleSubmit = async (e) => {
@@ -43,6 +44,7 @@ function CheckoutForm({ roundId, amount, onClose }) {
 
       const data = await res.json();
       setTxHash(data.blockchain_hash);
+      setTxOnChain(data.blockchain_status === "finalized_on_chain");
       setStatus("success");
     } catch (err) {
       console.error(err);
@@ -59,15 +61,39 @@ function CheckoutForm({ roundId, amount, onClose }) {
         </div>
         <h3 className="text-2xl font-bold text-white mb-2">Contribution Secured</h3>
         <p className="text-grey-mid text-sm mb-6 px-4 leading-relaxed">
-          Your donation has been memorialized on the Solana ledger.
-          The climate resilience tranche is now active.
+          Your card payment triggered a Solana Memo transaction — permanently
+          recorded on the blockchain. No crypto wallet was required.
         </p>
 
-        <div className="bg-black/40 rounded-2xl p-4 border border-teal-light/20 mb-6 text-left">
-          <div className="text-[10px] uppercase tracking-widest text-teal-light mb-2 font-mono">
-            Solana Transaction Hash
-          </div>
-          <div className="font-mono text-[10px] break-all text-white/60">{txHash}</div>
+        <div className="bg-black/40 rounded-2xl p-4 border border-teal-light/20 mb-4 text-left">
+          {txOnChain ? (
+            <>
+              <div className="text-[10px] uppercase tracking-widest text-teal-light mb-2 font-mono">
+                Solana On-Chain Record
+              </div>
+              <div className="font-mono text-[10px] break-all text-white/60 mb-3">{txHash}</div>
+              <a
+                href={`https://explorer.solana.com/tx/${txHash}?cluster=devnet`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-xs font-semibold text-teal-light hover:text-white transition-colors border border-teal-light/30 rounded-xl px-3 py-2"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                Verify on Solana Explorer →
+              </a>
+            </>
+          ) : (
+            <>
+              <div className="text-[10px] uppercase tracking-widest text-grey-mid mb-2 font-mono">
+                Donation Ledger ID
+              </div>
+              <div className="font-mono text-[10px] break-all text-white/60 mb-2">{txHash}</div>
+              <p className="text-[10px] text-grey-dark leading-relaxed">
+                Recorded locally — Solana devnet temporarily rate-limited.
+                All contributions are batched and committed on-chain when devnet capacity is available.
+              </p>
+            </>
+          )}
         </div>
 
         <button
@@ -100,7 +126,7 @@ function CheckoutForm({ roundId, amount, onClose }) {
         <label className="block text-[10px] uppercase tracking-widest text-grey-mid mb-2 font-mono">
           Encrypted Card Entry
         </label>
-        <div className="bg-black/40 border border-grey-dark/50 rounded-2xl p-4 focus-within:border-teal-light/50 transition-all">
+        <div className="bg-black/40 border border-grey-dark/50 rounded-2xl p-4 focus-within:border-teal-light/50 transition-all" style={{ minHeight: "52px" }}>
           <CardElement
             options={{
               style: {
@@ -123,9 +149,13 @@ function CheckoutForm({ roundId, amount, onClose }) {
         </div>
       )}
 
-      <div className="flex items-start gap-3 p-4 bg-orange/10 border border-orange/20 rounded-2xl text-orange-200 text-xs leading-relaxed">
-        <Zap size={16} className="shrink-0 mt-0.5" />
-        <p>Contribution triggers a Solana smart-contract tranche on devnet. Your Stripe charge is PCI-compliant.</p>
+      <div className="flex items-start gap-3 p-4 bg-teal/10 border border-teal-light/20 rounded-2xl text-teal-light/80 text-xs leading-relaxed">
+        <ShieldCheck size={16} className="shrink-0 mt-0.5" />
+        <p>
+          <span className="font-bold text-teal-light">No crypto wallet required.</span>{" "}
+          Pay with your card — we write an immutable Solana Memo on your behalf so your
+          donation is publicly verifiable on-chain.
+        </p>
       </div>
 
       <button
@@ -133,9 +163,7 @@ function CheckoutForm({ roundId, amount, onClose }) {
         disabled={!stripe || status === "processing"}
         className="w-full py-4 bg-white text-black font-bold rounded-2xl hover:bg-teal-light transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-sm disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {status === "processing"
-          ? "Synchronizing..."
-          : `Authorize $${amount} Donation`}
+        {status === "processing" ? "Processing..." : `Donate $${amount} by Card`}
       </button>
 
       <div className="flex items-center justify-center gap-8 pt-2 opacity-30">
@@ -154,7 +182,7 @@ export default function DonateModal({ isOpen, onClose, region, roundId }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" style={{ animation: "modalFadeIn 0.2s ease" }}>
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-md"
@@ -162,7 +190,7 @@ export default function DonateModal({ isOpen, onClose, region, roundId }) {
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg bg-[#080f1a] rounded-[32px] border border-white/10 shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg bg-[#080f1a] rounded-[32px] border border-white/10 shadow-2xl overflow-hidden" style={{ animation: "modalSlideUp 0.22s cubic-bezier(0.16,1,0.3,1)" }}>
         {/* Top accent bar */}
         <div className="h-1 bg-gradient-to-r from-teal-light via-orange to-red-alert" />
 

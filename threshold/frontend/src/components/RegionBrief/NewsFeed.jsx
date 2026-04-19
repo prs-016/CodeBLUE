@@ -2,7 +2,7 @@ import React from "react";
 
 function groupItems(items) {
   return {
-    reliefweb: items.filter((item) => item.signal_type === "reliefweb"),
+    intelligence: items.filter((item) => item.signal_type === "intelligence"),
     gdelt: items.filter((item) => item.signal_type === "gdelt"),
   };
 }
@@ -35,14 +35,14 @@ export default function NewsFeed({ items = [] }) {
     <section className="rounded-[28px] border border-grey-dark/80 bg-white/[0.03] p-6">
       <div>
         <div className="text-xs uppercase tracking-[0.28em] text-grey-mid">News intelligence</div>
-        <h3 className="mt-2 text-2xl font-semibold text-white">Confirmed operations vs media attention</h3>
+        <h3 className="mt-2 text-2xl font-semibold text-white">Live Operations vs Media Attention</h3>
         <p className="mt-1 text-sm text-grey-mid">
-          ReliefWeb signals active crisis operations. GDELT indicates public visibility. They are deliberately shown as different evidence streams.
+          Continuous AI intelligence via Gemini identifies live crisis operations from disparate ground truth sources. GDELT isolates macroscopic public media visibility.
         </p>
       </div>
 
       <div className="mt-6 grid gap-4 xl:grid-cols-2">
-        <NewsColumn title="Situation reports" eyebrow="ReliefWeb" items={grouped.reliefweb} />
+        <NewsColumn title="Situation reports" eyebrow="AI Live Intelligence" items={grouped.intelligence} />
         <NewsColumn title="Attention signal" eyebrow="GDELT" items={grouped.gdelt} />
       </div>
     </section>

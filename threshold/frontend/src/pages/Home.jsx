@@ -1,14 +1,31 @@
-import { Activity } from "lucide-react";
-import React, { useCallback } from "react";
+import { Activity, Database } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import RiskCard from "../components/RiskCard/RiskCard";
 import WarRoomGlobe from "../components/Globe/WarRoomGlobe";
 import { useRegions } from "../hooks";
 import { useRiskAssessment } from "../hooks/useRiskAssessment";
 
+const API_BASE = (typeof import.meta !== "undefined" && import.meta?.env?.VITE_API_URL) || "http://localhost:8000";
+
+const STATUS_DOT = {
+  live:          "bg-teal-light animate-pulse",
+  grounded:      "bg-teal-light animate-pulse",
+  snowflake:     "bg-blue-400 animate-pulse",
+  not_configured:"bg-grey-dark",
+};
+
 export default function Home() {
   const { regions } = useRegions();
   const { quick, enrich, loadingQuick, loadingEnrich, assess, clear } = useRiskAssessment();
+  const [dataSources, setDataSources] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/v1/admin/data-sources`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setDataSources(d); })
+      .catch(() => {});
+  }, []);
 
   const critical = [...regions].sort(
     (a, b) => (b.threshold_proximity_score || 0) - (a.threshold_proximity_score || 0)
@@ -78,10 +95,32 @@ export default function Home() {
 
         {/* Bottom bar: live stats */}
         <div className="flex items-end justify-between p-6 pb-8">
-          {/* Bottom-left: region count */}
-          <div className="rounded-xl border border-grey-dark/60 bg-black/40 px-4 py-3 backdrop-blur-md">
-            <div className="text-[10px] uppercase tracking-[0.25em] text-grey-mid">Monitoring</div>
-            <div className="mt-0.5 font-mono text-xl text-white">{regions.length} regions</div>
+          {/* Bottom-left: live data sources */}
+          <div className="rounded-xl border border-grey-dark/60 bg-black/40 px-4 py-3 backdrop-blur-md min-w-[220px]">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Database className="w-3 h-3 text-teal-light" />
+              <span className="text-[10px] uppercase tracking-[0.25em] text-teal-light font-mono">Live Data Feeds</span>
+            </div>
+            {dataSources ? (
+              <div className="space-y-1.5">
+                {dataSources.sources.map((src, i) => (
+                  <div key={i} className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[src.status] || "bg-grey-mid"}`} />
+                      <span className="font-mono text-[10px] text-white truncate">{src.name}</span>
+                    </div>
+                    <span className="font-mono text-[10px] text-grey-mid shrink-0">
+                      {src.rows != null ? src.rows.toLocaleString() : src.status}
+                    </span>
+                  </div>
+                ))}
+                <div className="mt-2 pt-2 border-t border-grey-dark/50 font-mono text-[9px] text-grey-dark">
+                  Snowflake · {dataSources.snowflake_database} · {regions.length} regions
+                </div>
+              </div>
+            ) : (
+              <div className="mt-0.5 font-mono text-xl text-white">{regions.length} regions</div>
+            )}
           </div>
 
           {/* Bottom-right: highest score */}

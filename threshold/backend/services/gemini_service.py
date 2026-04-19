@@ -143,9 +143,74 @@ async def search_news(region_name: str, disaster_type: str) -> list[dict]:
         "required": ["news"],
     }
 
+    today = date.today().isoformat()
+
+    # ── Attempt 1: Google Search grounding (real, verified URLs) ─────────────
+    # Grounding is mutually exclusive with JSON response schema, so we ask for
+    # JSON in the prompt itself and parse the model's free-form text output.
+    try:
+        grounded_prompt = (
+            f"Search the web for the top 4 most recent news articles or situation reports "
+            f"about {disaster_type} and environmental stress in {region_name} (2024–2026). "
+            f"Return ONLY a JSON object — no markdown fences, no extra text — "
+            f'with this structure: {{"news":[{{"title":"...","body_summary":"one sentence","url":"full URL","urgency_score":8.5}}]}}'
+        )
+        grounded_resp = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=grounded_prompt,
+            config=types.GenerateContentConfig(
+                tools=[types.Tool(google_search=types.GoogleSearch())],
+                temperature=0.1,
+            ),
+        )
+
+        # Extract real verified URLs from grounding metadata
+        grounding_urls: list[str] = []
+        try:
+            meta = grounded_resp.candidates[0].grounding_metadata
+            for chunk in (meta.grounding_chunks or []):
+                if hasattr(chunk, "web") and chunk.web and chunk.web.uri:
+                    grounding_urls.append(str(chunk.web.uri))
+        except Exception:
+            pass
+
+        # Parse model text — strip markdown fences if present
+        raw = grounded_resp.text.strip()
+        if raw.startswith("```"):
+            lines = raw.split("\n")
+            inner_lines = lines[1:] if lines[-1].strip() == "```" else lines[1:]
+            if inner_lines and inner_lines[-1].strip() == "```":
+                inner_lines = inner_lines[:-1]
+            raw = "\n".join(inner_lines)
+
+        data = json.loads(raw)
+        out = []
+        for i, n in enumerate(data.get("news", [])):
+            # Prefer grounding URL (real, verified by Google) over model-generated one
+            url = grounding_urls[i] if i < len(grounding_urls) else n.get("url", "")
+            out.append({
+                "id": f"gemini-grounded-{hash(n['title'])}",
+                "title": n["title"],
+                "body_summary": n["body_summary"],
+                "url": url,
+                "urgency_score": float(n.get("urgency_score", 7.0)),
+                "date": today,
+                "source_org": "Threshold Intelligence (Google Search)",
+                "source_type": "gemini_grounded",
+                "disaster_type": disaster_type,
+            })
+
+        if out:
+            _NEWS_CACHE[cache_key] = out
+            logger.info(f"Cached {len(out)} grounded news items for '{cache_key}' ({len(grounding_urls)} verified URLs)")
+            return out
+    except Exception as grounded_err:
+        logger.warning(f"Grounded search failed, falling back to structured call: {grounded_err}")
+
+    # ── Attempt 2: Structured JSON call (no grounding, but schema-enforced) ──
     try:
         response = client.models.generate_content(
-            model="gemini-2.0-flash",  # lower quota pressure than 2.5-flash
+            model="gemini-2.0-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
@@ -154,7 +219,6 @@ async def search_news(region_name: str, disaster_type: str) -> list[dict]:
             ),
         )
         data = json.loads(response.text)
-        today = date.today().isoformat()
         out = []
         for n in data.get("news", []):
             out.append({
@@ -178,7 +242,6 @@ async def search_news(region_name: str, disaster_type: str) -> list[dict]:
         else:
             logger.error(f"Gemini search_news error: {e}")
         fallback = _fallback_news(region_name, disaster_type)
-        # Cache the fallback too so we don't keep hammering a rate-limited API
         _NEWS_CACHE[cache_key] = fallback
         return fallback
 

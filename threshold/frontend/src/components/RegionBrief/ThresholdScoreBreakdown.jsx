@@ -37,11 +37,11 @@ export default function ThresholdScoreBreakdown({ score = 0, primaryDriver = "",
                 className={`h-full rounded-full ${item.key === 'stability' ? 'bg-teal-mid' : 'bg-gradient-to-r from-teal-light via-orange to-red-alert'}`}
                 style={{ 
                   width: `${clampPercent(
-                    Math.abs(item.value), 
-                    item.key === "thermal" ? 35 : 
-                    item.key === "oxygen" ? 7 : 
-                    item.key === "productivity" ? 5 : 10
-                  )}%` 
+                    Math.abs(item.value),
+                    item.key === "thermal" ? 3 :
+                    item.key === "oxygen" ? 8 :
+                    item.key === "productivity" ? 2 : 5
+                  )}%`
                 }}
               />
             </div>

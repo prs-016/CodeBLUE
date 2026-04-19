@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     orthogonal_api_key: str = ""
     google_maps_api_key: str = ""
     gemini_api_key: str = "AIzaSyAQgrVLtCKbu8nJCUIU3gh-apFD16Rr77A"
+    elevenlabs_api_key: str = ""
+    elevenlabs_voice_id: str = "pNInz6obpgDQGcFmaJgB"  # Adam — deep, authoritative
     snowflake_account: str = ""
     snowflake_user: str = ""
     snowflake_password: str = ""

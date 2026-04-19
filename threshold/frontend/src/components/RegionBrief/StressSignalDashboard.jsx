@@ -23,10 +23,12 @@ function makePath(points, width, height, padding) {
   return points
     .map((point, index) => {
       const x = padding + index * xStep;
-      const y =
-        height -
-        padding -
-        ((point.value - minValue) / Math.max(maxValue - minValue, 0.0001)) * (height - padding * 2);
+      let y;
+      if (Math.abs(maxValue - minValue) < 0.0001) {
+        y = height / 2;
+      } else {
+        y = height - padding - ((point.value - minValue) / (maxValue - minValue)) * (height - padding * 2);
+      }
       return `${index === 0 ? "M" : "L"} ${x} ${y}`;
     })
     .join(" ");

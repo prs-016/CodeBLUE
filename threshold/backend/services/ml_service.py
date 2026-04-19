@@ -294,7 +294,8 @@ class DemoModelRegistry:
             cost_multiplier = round(recovery_cost / max(prevention_cost, 1), 2)
             anchor_note = f"Anchored on {latest['event_name']} ({latest['year_crossed']})"
         else:
-            prevention_cost = round(funding_gap * 0.4, 2)
+            fallback_gap = funding_gap if funding_gap > 0 else 4500000.0
+            prevention_cost = round(fallback_gap * 0.4, 2)
             recovery_cost = round(prevention_cost * (4 + current_score / 2), 2)
             cost_multiplier = round(recovery_cost / max(prevention_cost, 1), 2)
             anchor_note = primary_threat

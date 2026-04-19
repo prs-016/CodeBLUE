@@ -11,7 +11,7 @@ from config import settings
 from database import SessionLocal, engine, get_last_data_refresh, init_db, _upsert_app_meta
 from models.region import HealthResponse
 from routers import charities, counterfactual, fund, funding, news, regions, risk_assessment, triage, tsunamis
-from routers import admin
+from routers import admin, tour
 from services.ml_service import model_registry
 
 logger = logging.getLogger(__name__)
@@ -103,3 +103,4 @@ app.include_router(
 )
 app.include_router(admin.router, prefix=f"{settings.api_v1_str}/admin", tags=["admin"])
 app.include_router(tsunamis.router, prefix=f"{settings.api_v1_str}/tsunamis", tags=["tsunamis"])
+app.include_router(tour.router, prefix=f"{settings.api_v1_str}/tour", tags=["tour"])

@@ -11,10 +11,10 @@ function formatMoney(value) {
 }
 
 export default function BranchingPaths({ estimate, region }) {
-  const prevention = estimate?.prevention_cost ?? 0;
-  const recovery = estimate?.recovery_cost ?? 0;
+  const prevention = estimate?.prevention_cost_usd ?? 0;
+  const recovery = estimate?.recovery_cost_usd ?? 0;
   const multiplier = estimate?.cost_multiplier ?? 0;
-  const breakdown = estimate?.breakdown ?? {};
+  const breakdown = { ...(estimate?.prevention_breakdown || {}), ...(estimate?.recovery_breakdown || {}) };
 
   return (
     <section className="rounded-[28px] border border-grey-dark/80 bg-white/[0.03] p-6">

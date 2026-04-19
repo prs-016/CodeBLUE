@@ -8,27 +8,27 @@ function summarizeDrivers(region) {
   return [
     {
       key: "thermal",
-      label: "Water Temperature",
-      value: region?.t_degc ?? 0,
-      detail: "Live sensor data",
+      label: "SST Anomaly",
+      value: region?.latest_sst_anomaly ?? 0,
+      detail: "Live sensor data · °C above baseline",
     },
     {
       key: "oxygen",
       label: "Dissolved Oxygen",
-      value: region?.o2ml_l ?? 0,
-      detail: "Hypoxia monitor",
+      value: region?.latest_o2_current ?? 0,
+      detail: "Hypoxia monitor · ml/L",
     },
     {
       key: "productivity",
       label: "Chlorophyll",
-      value: region?.chlora ?? 0,
+      value: region?.latest_chlorophyll_anomaly ?? 0,
       detail: "Ecosystem primary production",
     },
     {
       key: "stability",
-      label: "Political Stability",
-      value: region?.goldstein ?? 0,
-      detail: "GDELT Narrative Score",
+      label: "Nitrate Anomaly",
+      value: region?.latest_nitrate_anomaly ?? 0,
+      detail: "Scripps CalCOFI water quality",
     },
   ];
 }
@@ -48,12 +48,13 @@ export default function useRegionBrief(regionId) {
     enabled: Boolean(regionId),
     dependencies: [regionId],
     transform: (rows) =>
-      rows.map((item) => ({
-        ...item,
-        signal_type:
-          item.signal_type ??
-          (item.source_org?.toLowerCase().includes("relief") ? "reliefweb" : "gdelt"),
-      })),
+      rows.map((item) => {
+        const isIntel = item.source_type === 'gemini' || item.source_type === 'curated' || item.source_org?.toLowerCase().includes('relief');
+        return {
+          ...item,
+          signal_type: item.signal_type ?? (isIntel ? 'intelligence' : 'gdelt'),
+        };
+      }),
   });
 
   const estimateState = useApiResource({

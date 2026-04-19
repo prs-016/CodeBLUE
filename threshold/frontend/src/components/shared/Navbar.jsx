@@ -43,8 +43,14 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* TEAM BADGE */}
-        <div>
+        {/* TOUR + TEAM BADGE */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("restart-tour"))}
+            className="flex items-center gap-1.5 text-[11px] font-mono text-teal-light border border-teal-light/30 px-2.5 py-1 rounded hover:bg-teal-light/10 transition-colors"
+          >
+            ▶ Tour
+          </button>
           <div className="text-[10px] font-mono text-grey-mid border border-grey-mid/30 px-2 py-1 rounded">
             CODE BLUE
           </div>
