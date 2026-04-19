@@ -78,32 +78,33 @@ export default function RiskCard({ quick, enrich, loadingQuick, loadingEnrich, o
       <hr className="border-grey-dark mb-4" />
 
       {/* Headlines */}
-      <div className="mb-4">
-        <div className="text-xs text-grey-mid uppercase tracking-wider mb-2">Recent Headlines</div>
-        {loadingEnrich ? (
-          <RiskCardSkeleton />
-        ) : enrich?.headlines?.length > 0 ? (
-          <ul className="space-y-2">
-            {enrich.headlines.slice(0, 4).map((h, i) => (
-              <li key={i}>
-                <a
-                  href={h.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-teal-light hover:text-white transition-colors leading-tight block"
-                >
-                  {h.title}
-                </a>
-                <span className="text-xs text-grey-mid">{h.source}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-xs text-grey-mid italic">
-            {enrich?.errors?.news ? "Headlines unavailable" : country === "N/A" ? "Open ocean — no land coverage" : "No recent coverage found"}
-          </p>
-        )}
-      </div>
+      {enrich?.headlines?.length > 0 && (
+        <div className="mb-4">
+          <div className="text-xs text-grey-mid uppercase tracking-wider mb-2">Recent Headlines</div>
+          {loadingEnrich ? (
+            <RiskCardSkeleton />
+          ) : (
+            <ul className="space-y-2">
+              {enrich.headlines.slice(0, 4).map((h, i) => (
+                <li key={i}>
+                  <a
+                    href={h.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-teal-light hover:text-white transition-colors leading-tight block"
+                  >
+                    {h.title}
+                  </a>
+                  <span className="text-xs text-grey-mid">{h.source}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {!loadingEnrich && !enrich?.headlines?.length && country !== "N/A" && (
+        <p className="text-[10px] text-grey-dark italic mb-3">No recent news on disaster</p>
+      )}
 
       {/* Charities */}
       <div>
