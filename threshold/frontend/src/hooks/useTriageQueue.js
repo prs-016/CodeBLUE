@@ -14,10 +14,13 @@ function normalizeTriageRegion(region) {
 }
 
 export default function useTriageQueue(filters = {}) {
-  const query = useMemo(() => buildQuery(filters), [filters]);
+  // Serialize filters to a string so `useMemo` dep comparison is by value,
+  // not by object reference — prevents infinite refetch on default `filters = {}`
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const query = useMemo(() => buildQuery(filters), [JSON.stringify(filters)]);
   const state = useApiResource({
     endpoint: `/api/v1/triage${query}`,
-    dependencies: [query],
+    // No extra `dependencies` — endpoint already encodes the query string.
     transform: (rows) => rows.map(normalizeTriageRegion),
   });
   return { ...state, queue: state.data ?? [] };
