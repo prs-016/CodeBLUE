@@ -12,6 +12,7 @@ from aws_cdk import (
     aws_secretsmanager as secretsmanager,
     aws_sagemaker as sagemaker,
     aws_iam as iam,
+    aws_ecr_assets as ecr_assets,
     RemovalPolicy
 )
 
@@ -61,7 +62,11 @@ class ThresholdStack(Stack):
             memory_limit_mib=1024,
             desired_count=1,
             task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
-                image=ecs.ContainerImage.from_asset("../", file="backend/Dockerfile"),
+                image=ecs.ContainerImage.from_asset(
+                    "../", 
+                    file="backend/Dockerfile",
+                    platform=ecr_assets.Platform.LINUX_AMD64
+                ),
                 container_port=8000,
                 secrets={
                     "STRIPE_SECRET_KEY": ecs.Secret.from_secrets_manager(secret, "STRIPE_SECRET_KEY"),
