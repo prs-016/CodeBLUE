@@ -2,36 +2,33 @@ import { useApiResource } from "./useApiResource";
 import { useRegion, useRegionTrajectory } from "./useRegions";
 
 function summarizeDrivers(region) {
+  if (region?.breakdown) return region.breakdown;
+  
+  // Fallback for missing breakdown
   return [
     {
       key: "thermal",
-      label: "Thermal Stress",
-      value: region?.sst_anomaly_30d_avg ?? region?.sst_anomaly ?? 0,
-      detail: region?.bleaching_alert_level
-        ? `Alert ${region.bleaching_alert_level}/4`
-        : "No reef alert",
+      label: "Water Temperature",
+      value: region?.t_degc ?? 0,
+      detail: "Live sensor data",
     },
     {
       key: "oxygen",
-      label: "Oxygen Loss",
-      value: region?.hypoxia_risk ?? Math.max(0, 1 - (region?.o2_current || 5) / 6),
-      detail: region?.o2_current ? `${region.o2_current} ml/L` : "Proxy estimate",
+      label: "Dissolved Oxygen",
+      value: region?.o2ml_l ?? 0,
+      detail: "Hypoxia monitor",
     },
     {
-      key: "carbon",
-      label: "Carbon Pressure",
-      value: region?.co2_yoy_acceleration ?? 0,
-      detail: region?.co2_yoy_acceleration
-        ? `${(region.co2_yoy_acceleration * 100).toFixed(1)}% YoY accel.`
-        : "Keeling-linked proxy",
+      key: "productivity",
+      label: "Chlorophyll",
+      value: region?.chlora ?? 0,
+      detail: "Ecosystem primary production",
     },
     {
-      key: "nutrients",
-      label: "Nutrient Load",
-      value: region?.chlorophyll_anomaly ?? 0,
-      detail: region?.chlorophyll_anomaly
-        ? `${region.chlorophyll_anomaly}x seasonal baseline`
-        : "Baseline loading",
+      key: "stability",
+      label: "Political Stability",
+      value: region?.goldstein ?? 0,
+      detail: "GDELT Narrative Score",
     },
   ];
 }

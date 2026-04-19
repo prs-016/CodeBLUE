@@ -21,31 +21,31 @@ except Exception:  # pragma: no cover - optional dependency
 
 
 FEATURE_COLUMNS = [
-    "sst_anomaly_30d_avg",
-    "sst_acceleration",
-    "o2_current",
-    "o2_trend_90d",
-    "hypoxia_risk",
-    "chlorophyll_anomaly",
-    "dhw_current",
-    "bleaching_alert_level",
-    "co2_yoy_acceleration",
-    "nitrate_anomaly",
-    "larvae_count_trend",
+    "t_degc",
+    "o2ml_l",
+    "salnty",
+    "chlora",
+    "no3um",
+    "po4um",
+    "sio3um",
+    "wind_spd",
+    "barometer",
+    "goldstein",
+    "numarts",
 ]
 
 DISPLAY_NAMES = {
-    "sst_anomaly_30d_avg": "SST Anomaly",
-    "sst_acceleration": "SST Acceleration",
-    "o2_current": "Dissolved O2",
-    "o2_trend_90d": "O2 Trend",
-    "hypoxia_risk": "Hypoxia Risk",
-    "chlorophyll_anomaly": "Chlorophyll",
-    "dhw_current": "Degree Heating Weeks",
-    "bleaching_alert_level": "Bleaching Alert",
-    "co2_yoy_acceleration": "CO2 Acceleration",
-    "nitrate_anomaly": "Nitrate",
-    "larvae_count_trend": "Larvae Trend",
+    "t_degc": "Water Temp (°C)",
+    "o2ml_l": "Dissolved Oxygen",
+    "salnty": "Salinity",
+    "chlora": "Chlorophyll",
+    "no3um": "Nitrate (µM)",
+    "po4um": "Phosphate",
+    "sio3um": "Silicate",
+    "wind_spd": "Wind Speed",
+    "barometer": "Pressure (mbar)",
+    "goldstein": "Political Stability",
+    "numarts": "Media Volume",
 }
 
 

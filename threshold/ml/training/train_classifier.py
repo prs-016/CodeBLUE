@@ -16,12 +16,25 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    frame = load_training_frame(args.input)
+    
+    # We now pull directly from Snowflake if requested
+    if args.data == "real":
+        from ml.processing.snowflake_query import extract_training_data
+        frame = extract_training_data()
+    else:
+        # Fallback to local file for synthetic/dev
+        if not Path(args.input).exists():
+            print(f"Input {args.input} not found, falling back to Snowflake...")
+            from ml.processing.snowflake_query import extract_training_data
+            frame = extract_training_data()
+        else:
+            frame = load_training_frame(args.input)
+            
     model = TippingPointClassifier().train(frame)
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     model.save(output_path)
-    print(f"trained tipping-point classifier using {args.data} data -> {output_path}")
+    print(f"Successfully trained tipping-point classifier -> {output_path}")
 
 
 if __name__ == "__main__":
