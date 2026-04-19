@@ -40,5 +40,8 @@ class Settings(BaseSettings):
     solana_program_id: str = "threshold-demo-program"
     solana_usdc_mint: str = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
 
+    orthogonal_api_key: str = ""
+    google_maps_api_key: str = ""
+
 
 settings = Settings()

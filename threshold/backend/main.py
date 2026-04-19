@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from database import SessionLocal, get_last_data_refresh, init_db
 from models.region import HealthResponse
-from routers import charities, counterfactual, fund, funding, news, regions, triage
+from routers import charities, counterfactual, fund, funding, news, regions, risk_assessment, triage
 from services.ml_service import model_registry
 
 
@@ -70,3 +70,8 @@ app.include_router(
     tags=["charities"],
 )
 app.include_router(fund.router, prefix=f"{settings.api_v1_str}/fund", tags=["fund"])
+app.include_router(
+    risk_assessment.router,
+    prefix=f"{settings.api_v1_str}/risk-assessment",
+    tags=["risk-assessment"],
+)
