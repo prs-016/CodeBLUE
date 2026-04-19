@@ -1,69 +1,39 @@
 from __future__ import annotations
 
-import asyncio
-from datetime import datetime, timedelta, timezone
-
-from services.ortho_client import ortho_post
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _hours_ago_iso(hours: int) -> str:
-    return (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _extract_latest(data: dict) -> float:
-    """Pull the most recent value from an Ortho/Precip hourly response."""
-    features = data.get("features") or data.get("data") or []
-    if not features:
-        return 0.0
-    last = features[-1]
-    props = last.get("properties") if isinstance(last, dict) else {}
-    for key in ("value", "amount", "speed", "temperature", "soilMoisture"):
-        if key in props:
-            val = props[key]
-            return float(val) if val is not None else 0.0
-    if isinstance(last, (int, float)):
-        return float(last)
-    return 0.0
-
+import httpx
 
 async def get_weather(lat: float, lon: float) -> dict:
-    start = _hours_ago_iso(48)
-    end = _now_iso()
-    coord_args = {"latitude": str(lat), "longitude": str(lon)}
-    range_args = {**coord_args, "start": start, "end": end}
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,wind_gusts_10m&hourly=precipitation,soil_moisture_0_to_1cm&past_days=2"
+    
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception:
+            return {
+                "rainfall_mm_last_48h": 0.0,
+                "soil_moisture_pct": 0.0,
+                "wind_speed_gust_ms": 0.0,
+                "temperature_c": 0.0,
+            }
 
-    rainfall_task = ortho_post("precip", "/api/v1/last-48", query=coord_args)
-    soil_task = ortho_post("precip", "/api/v1/soil-moisture-hourly", query=range_args)
-    wind_task = ortho_post("precip", "/api/v1/wind-speed-gust-hourly", query=range_args)
-    temp_task = ortho_post("precip", "/api/v1/temperature-hourly", query=range_args)
-
-    results = await asyncio.gather(rainfall_task, soil_task, wind_task, temp_task, return_exceptions=True)
-
-    rainfall_raw, soil_raw, wind_raw, temp_raw = results
-
-    def safe_extract(raw, default=0.0) -> float:
-        if isinstance(raw, Exception):
-            return default
-        return _extract_latest(raw)
-
-    # rainfall last-48 may return a direct value or features list
-    rainfall_mm = 0.0
-    if not isinstance(rainfall_raw, Exception):
-        features = rainfall_raw.get("features") or rainfall_raw.get("data") or []
-        if features:
-            last = features[-1]
-            props = last.get("properties", {}) if isinstance(last, dict) else {}
-            rainfall_mm = float(props.get("totalPrecipitation") or props.get("value") or props.get("amount") or 0.0)
-        elif "totalPrecipitation" in rainfall_raw:
-            rainfall_mm = float(rainfall_raw["totalPrecipitation"] or 0.0)
-
-    soil_pct = safe_extract(soil_raw) / 100.0  # API returns 0-100, we want 0-1
-    wind_ms = safe_extract(wind_raw)
-    temp_c = safe_extract(temp_raw)
+    current = data.get("current", {})
+    hourly = data.get("hourly", {})
+    
+    # Rainfall over last 48h
+    precip_array = hourly.get("precipitation", [])
+    # past_days=2 gives 48 hours of historical data before zero hour
+    rainfall_mm = sum(precip_array[:48]) if precip_array else 0.0
+    
+    # Soil moisture (latest/current)
+    soil_moisture_array = hourly.get("soil_moisture_0_to_1cm", [])
+    soil_pct = soil_moisture_array[48] if len(soil_moisture_array) > 48 else (soil_moisture_array[-1] if soil_moisture_array else 0.0)
+    
+    wind_kmh = current.get("wind_gusts_10m", 0.0)
+    wind_ms = wind_kmh * (1000 / 3600)  # km/h to m/s
+    
+    temp_c = current.get("temperature_2m", 0.0)
 
     return {
         "rainfall_mm_last_48h": round(rainfall_mm, 2),
