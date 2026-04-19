@@ -100,9 +100,13 @@ class RegionWindowDataset(Dataset):
         stride: int = 1,
         mean: np.ndarray | None = None,
         std:  np.ndarray | None = None,
+        augment: bool = False,
+        noise_std: float = 0.01,
     ):
         self.window = window
         self.stride = stride
+        self.augment = augment
+        self.noise_std = noise_std
         self.samples: list[tuple[np.ndarray, int, float]] = []
 
         for region_id, group in df.groupby("region_id"):
@@ -130,6 +134,11 @@ class RegionWindowDataset(Dataset):
     def __getitem__(self, idx: int):
         x, region_idx, y = self.samples[idx]
         x_norm = (x - self.mean) / self.std
+
+        # Data Augmentation: add slight Gaussian noise to inputs
+        if self.augment:
+            x_norm = x_norm + np.random.normal(0, self.noise_std, x_norm.shape).astype(np.float32)
+
         return (
             torch.from_numpy(x_norm),
             torch.tensor(region_idx, dtype=torch.long),
@@ -215,16 +224,17 @@ def eval_epoch(model, loader, criterion, device):
 # ---------------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(description="Train ThresholdNet")
-    parser.add_argument("--epochs",        type=int,   default=80)
-    parser.add_argument("--batch-size",    type=int,   default=128)
+    parser.add_argument("--epochs",        type=int,   default=100)
+    parser.add_argument("--batch-size",    type=int,   default=64)
     parser.add_argument("--window",        type=int,   default=30,    help="Sliding window timesteps")
     parser.add_argument("--stride",        type=int,   default=1,     help="Window stride")
-    parser.add_argument("--lr",            type=float, default=3e-4)
-    parser.add_argument("--weight-decay",  type=float, default=1e-4)
-    parser.add_argument("--hidden",        type=int,   default=256,   help="LSTM hidden size per direction")
-    parser.add_argument("--lstm-layers",   type=int,   default=2)
+    parser.add_argument("--lr",            type=float, default=1e-3)
+    parser.add_argument("--weight-decay",  type=float, default=1e-2)
+    parser.add_argument("--hidden",        type=int,   default=64,   help="LSTM hidden size per direction")
+    parser.add_argument("--lstm-layers",   type=int,   default=1)
     parser.add_argument("--heads",         type=int,   default=4)
-    parser.add_argument("--dropout",       type=float, default=0.2)
+    parser.add_argument("--dropout",       type=float, default=0.4)
+    parser.add_argument("--patience",      type=int,   default=15,    help="Early stopping patience")
     parser.add_argument("--snowflake-url", type=str,   default=None,  help="SQLAlchemy Snowflake URL")
     parser.add_argument("--save-dir",      type=str,   default="ml/saved_models")
     parser.add_argument("--no-amp",        action="store_true",        help="Disable mixed precision")
@@ -239,26 +249,30 @@ def main():
     # ---- Data ----
     df = load_data(args.snowflake_url)
 
-    # Region-stratified split (prevents temporal leakage)
-    # Use 6 regions for train, 1 for val, 1 for test
-    all_regions = sorted(df["region_id"].unique())
-    val_regions  = {"california_current"}   # daily cadence → hardest to fit
-    test_regions = {"great_barrier_reef"}
-    train_regions = set(all_regions) - val_regions - test_regions
+    # 1. TEMPORAL SPLIT (Global)
+    # Take first 85% of each region's timeline for train, last 15% for val
+    train_dfs, val_dfs, test_dfs = [], [], []
+    for region_id, group in df.groupby("region_id"):
+        group = group.sort_values("date").reset_index(drop=True)
+        n = len(group)
+        split_val  = int(n * 0.85)
+        split_test = int(n * 0.95)
 
-    logger.info("Train regions: %s", sorted(train_regions))
-    logger.info("Val   region : %s", sorted(val_regions))
-    logger.info("Test  region : %s", sorted(test_regions))
+        train_dfs.append(group.iloc[:split_val])
+        val_dfs.append(group.iloc[split_val:split_test])
+        test_dfs.append(group.iloc[split_test:])
 
-    train_df = df[df["region_id"].isin(train_regions)]
-    val_df   = df[df["region_id"].isin(val_regions)]
-    test_df  = df[df["region_id"].isin(test_regions)]
+    train_df = pd.concat(train_dfs)
+    val_df   = pd.concat(val_dfs)
+    test_df  = pd.concat(test_dfs)
 
-    train_ds = RegionWindowDataset(train_df, window=args.window, stride=args.stride)
+    logger.info("Split strategy: Cross-Region Temporal Holdout (85/10/5)")
+
+    train_ds = RegionWindowDataset(train_df, window=args.window, stride=args.stride, augment=True)
     val_ds   = RegionWindowDataset(val_df,   window=args.window, stride=args.stride,
-                                   mean=train_ds.mean, std=train_ds.std)
+                                   mean=train_ds.mean, std=train_ds.std, augment=False)
     test_ds  = RegionWindowDataset(test_df,  window=args.window, stride=args.stride,
-                                   mean=train_ds.mean, std=train_ds.std)
+                                   mean=train_ds.mean, std=train_ds.std, augment=False)
 
     logger.info("Samples — train: %d  val: %d  test: %d", len(train_ds), len(val_ds), len(test_ds))
 
@@ -299,6 +313,7 @@ def main():
     best_val_mae  = float("inf")
     best_ckpt     = save_dir / "threshold_net_best.pt"
     history: list[dict] = []
+    patience_counter = 0
 
     logger.info("Starting training for %d epochs …", args.epochs)
     for epoch in range(1, args.epochs + 1):
@@ -319,6 +334,7 @@ def main():
 
         if val_mae < best_val_mae:
             best_val_mae = val_mae
+            patience_counter = 0
             torch.save(
                 {
                     "epoch": epoch,
@@ -333,6 +349,11 @@ def main():
                 best_ckpt,
             )
             logger.info("  ✓ saved best checkpoint (val_mae=%.4f)", val_mae)
+        else:
+            patience_counter += 1
+            if patience_counter >= args.patience:
+                logger.info("Early stopping triggered after %d epochs without improvement.", args.patience)
+                break
 
     # ---- Test evaluation ----
     logger.info("Loading best checkpoint for test evaluation …")
