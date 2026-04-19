@@ -1,356 +1,218 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
-import * as THREE from "three";
+import React, { useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import RiskCard from "../RiskCard/RiskCard";
-import { useRiskAssessment } from "../../hooks/useRiskAssessment";
 import { useTsunamis } from "../../hooks";
 
-export default function WarRoomGlobe({ regions }) {
-  const globeRef = useRef();
-  const containerRef = useRef();
-  const navigate = useNavigate();
-  const [hoverD, setHoverD] = useState(null);
-  const { quick, enrich, loadingQuick, loadingEnrich, assess, clear } = useRiskAssessment();
+export default function WarRoomGlobe({ regions, onAssess }) {
+  const globeRef    = useRef(null);
+  const containerRef = useRef(null);
+  const navigate    = useNavigate();
   const { tsunamis } = useTsunamis();
   const [currentYear, setCurrentYear] = useState(null);
 
-  // Initialize currentYear
+  // Stable refs — handlers inside the one-time globe init always see latest values
+  const onAssessRef  = useRef(onAssess);
+  const navigateRef  = useRef(navigate);
+  useEffect(() => { onAssessRef.current  = onAssess;  }, [onAssess]);
+  useEffect(() => { navigateRef.current  = navigate;  }, [navigate]);
+
+  // Latest data ref — init callback reads this after globe is created
+  const dataRef = useRef({ regionRings: [], tsunamis: [], currentYear: null });
+
+  // ── Year animation ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (tsunamis?.length > 0 && currentYear === null) {
-      const validYears = tsunamis.map(t => t.year).filter(y => y != null);
-      if (validYears.length > 0) {
-        // Find minimal year or max year to start? Start at min
-        setCurrentYear(Math.min(...validYears));
-      }
-    }
+    if (!tsunamis?.length || currentYear !== null) return;
+    const years = tsunamis.map(t => t.year).filter(Boolean);
+    if (years.length) setCurrentYear(Math.min(...years));
   }, [tsunamis, currentYear]);
 
-  // Animate over time
   useEffect(() => {
     if (currentYear === null || !tsunamis?.length) return;
-    const interval = setInterval(() => {
+    const id = setInterval(() => {
       setCurrentYear(prev => {
         const next = prev + 1;
-        const maxYear = new Date().getFullYear();
-        if (next > maxYear) {
-          return Math.min(...tsunamis.map(t => t.year).filter(y => y != null));
+        const max  = new Date().getFullYear();
+        if (next > max) {
+          const years = tsunamis.map(t => t.year).filter(Boolean);
+          return Math.min(...years);
         }
         return next;
       });
-    }, 150); // Fast enough to be interesting
-    return () => clearInterval(interval);
+    }, 140);
+    return () => clearInterval(id);
   }, [currentYear, tsunamis]);
 
+
+  // ── Ring data computation ─────────────────────────────────────────────────
+  const regionRings = useMemo(() => (regions || []).map(r => {
+    const score      = r.threshold_proximity_score || 0;
+    const isCritical = score >= 7;
+    return {
+      ...r,
+      lat: Number(r.lat),
+      lng: Number(r.lon),
+      maxR: Math.max(6, score * 2.4),
+      propagationSpeed: isCritical ? 4 : 1.5,
+      repeatPeriod:     isCritical ? 350 : 1100,
+      color: ringColorFn(score, r.primary_threat),
+      isTsunami: false,
+    };
+  }), [regions]);
+
+  const allTsunamiRings = useMemo(() => (tsunamis || [])
+    .filter(t => t.lat != null && t.lng != null && t.year != null)
+    .map(t => ({
+      ...t,
+      lat: Number(t.lat),
+      lng: Number(t.lng),
+      maxR: Math.max(3, (t.magnitude || 5) * 1.6),
+      propagationSpeed: 6,
+      repeatPeriod: 200,
+      color: (tt) => `rgba(0,210,255,${1 - tt})`,
+      isTsunami: true,
+    })), [tsunamis]);
+
+  // ── Core function: push current data into the globe instance ─────────────
+  const pushData = useCallback((globe) => {
+    if (!globe) return;
+    const { regionRings: rr, tsunamis: allT, currentYear: cy } = dataRef.current;
+
+    const activeTsunamis = cy !== null
+      ? allT.filter(t => Math.abs(t.year - cy) <= 1).map(t => ({
+          ...t,
+          color: (tt) => `rgba(0,210,255,${(1 - tt) * (t.year === cy ? 1 : 0.5)})`,
+        }))
+      : [];
+
+    globe.ringsData([...rr, ...activeTsunamis]);
+
+    // Arcs: most critical → all others
+    const sorted = [...rr].sort(
+      (a, b) => (b.threshold_proximity_score || 0) - (a.threshold_proximity_score || 0)
+    );
+    const top = sorted[0];
+    const arcs = top && sorted.length > 1
+      ? sorted.slice(1).map(r => ({
+          startLat: top.lat, startLng: top.lng,
+          endLat: r.lat, endLng: r.lng,
+          color: ["rgba(230,126,34,0.7)", "rgba(20,189,172,0.08)"],
+          stroke: 0.25 + (r.threshold_proximity_score || 0) * 0.04,
+        }))
+      : [];
+    globe.arcsData(arcs);
+
+    // Labels only for high-risk regions
+    globe.labelsData(rr.filter(r => (r.threshold_proximity_score || 0) >= 5));
+  }, []);
+
+  // ── Keep data ref in sync, then push to globe ─────────────────────────────
+  useEffect(() => {
+    dataRef.current = { regionRings, tsunamis: allTsunamiRings, currentYear };
+    pushData(globeRef.current);
+  }, [regionRings, allTsunamiRings, currentYear, pushData]);
+
+  // ── Globe initialisation (once) ───────────────────────────────────────────
   useEffect(() => {
     if (!containerRef.current) return;
-    import("globe.gl").then((GlobePkg) => {
-      const Globe = GlobePkg.default || GlobePkg;
+    let cancelled = false;
+
+    import("globe.gl").then(pkg => {
+      if (cancelled || !containerRef.current) return;
+      const Globe = pkg.default || pkg;
 
       const globe = Globe()(containerRef.current)
+        .globeImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg")
         .bumpImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-topology.png")
         .backgroundImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/night-sky.png")
-        .backgroundColor("rgba(10,22,40,0)") 
+        .backgroundColor("rgba(7,14,26,1)")
         .showAtmosphere(true)
-        .atmosphereColor("#0A84FF")
+        .atmosphereColor("#1a6ebd")
         .atmosphereAltitude(0.20)
+        // Hex grid
         .hexPolygonResolution(3)
-        .hexPolygonMargin(0.6)
-        .arcDashLength(0.4)
-        .arcDashGap(0.2)
+        .hexPolygonMargin(0.62)
+        // Arcs
+        .arcDashLength(0.35)
+        .arcDashGap(0.15)
         .arcDashInitialGap(() => Math.random())
-        .arcDashAnimateTime(2000)
-        .arcColor('color')
-        .arcStroke('stroke');
+        .arcDashAnimateTime(1800)
+        .arcColor("color")
+        .arcStroke("stroke")
+        // Rings — accessors + defaults
+        .ringLat("lat")
+        .ringLng("lng")
+        .ringColor("color")
+        .ringMaxRadius("maxR")
+        .ringPropagationSpeed("propagationSpeed")
+        .ringRepeatPeriod("repeatPeriod")
+        // Labels
+        .labelLat("lat")
+        .labelLng("lng")
+        .labelText("name")
+        .labelSize(0.5)
+        .labelColor(() => "rgba(255,255,255,0.9)")
+        .labelDotRadius(0)
+        .labelResolution(2)
+        // Events — onRingHover/onRingClick don't exist in globe.gl 2.x
+        // Globe click for risk assessment
+        .onGlobeClick(({ lat, lng }) => {
+          globe.controls().autoRotate = false;
+          onAssessRef.current?.(lat, lng);
+        });
 
-      // Add the native custom Day/Night Shader Material
-      const material = new THREE.ShaderMaterial({
-        uniforms: {
-          dayTexture: { value: new THREE.TextureLoader().load('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg') },
-          nightTexture: { value: new THREE.TextureLoader().load('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-night.jpg') },
-          sunDirection: { value: new THREE.Vector3(1, 0, 0) } // Fixed sun shining from the right
-        },
-        vertexShader: `
-          varying vec2 vUv;
-          varying vec3 vNormal;
-          void main() {
-            vUv = uv;
-            vNormal = normalize(normalMatrix * normal);
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
-        fragmentShader: `
-          uniform sampler2D dayTexture;
-          uniform sampler2D nightTexture;
-          uniform vec3 sunDirection;
+      globe.pointOfView({ lat: 20, lng: 10, altitude: 2.1 });
+      globe.controls().autoRotate      = true;
+      globe.controls().autoRotateSpeed = 0.9;
+      globe.controls().enableDamping   = true;
 
-          varying vec2 vUv;
-          varying vec3 vNormal;
-
-          void main() {
-            float intensity = dot(normalize(vNormal), normalize(sunDirection));
-            float mixValue = smoothstep(-0.2, 0.2, intensity);
-            
-            vec3 dayColor = texture2D(dayTexture, vUv).rgb;
-            vec3 nightColor = texture2D(nightTexture, vUv).rgb;
-            
-            gl_FragColor = vec4(mix(nightColor, dayColor, mixValue), 1.0);
-          }
-        `
-      });
-
-      globe.globeMaterial(material);
-
-      // Add cyber-military hex grid overlay for countries
-      fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
-        .then(res => res.json())
-        .then(countries => {
-          globe.hexPolygonsData(countries.features)
-               .hexPolygonTransitionDuration(1000);
-        }).catch(() => {});
-
-      globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 });
-      globe.controls().autoRotate = true;
-      globe.controls().autoRotateSpeed = 1.2;
-
-      // Click on empty globe space → trigger risk assessment pipeline
-      globe.onGlobeClick(({ lat, lng }) => {
-        globe.controls().autoRotate = false;
-        assess(lat, lng);
-      });
+      // Country hex grid overlay
+      fetch("https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson")
+        .then(r => r.json())
+        .then(geo => { if (!cancelled) globe.hexPolygonsData(geo.features).hexPolygonTransitionDuration(1000); })
+        .catch(() => {});
 
       globeRef.current = globe;
+
+      // Push whatever data is already loaded
+      pushData(globe);
     }).catch(console.error);
 
     return () => {
+      cancelled = true;
+      globeRef.current = null;
       if (containerRef.current) containerRef.current.innerHTML = "";
     };
-  }, []);
-
-
-
-  // Separate effect so assess reference doesn't recreate the globe
-  useEffect(() => {
-    if (!globeRef.current) return;
-    globeRef.current.onGlobeClick(({ lat, lng }) => {
-      globeRef.current.controls().autoRotate = false;
-      assess(lat, lng);
-    });
-  }, [assess]);
-
-
-
-  const regionRings = useMemo(() => {
-    const validRegions = regions || [];
-    return validRegions.map((r) => ({
-      lat: r.lat,
-      lng: r.lon,
-      maxR: Math.max(8, (r.threshold_proximity_score || 0) * 2.2),
-      propagationSpeed: (r.threshold_proximity_score || 0) > 7 ? 3.5 : 1.2,
-      repeatPeriod: (r.threshold_proximity_score || 0) > 7 ? 400 : 1200,
-      color: getColor(r.threshold_proximity_score || 0, r.primary_threat),
-      label: r.name,
-      ...r,
-    }));
-  }, [regions]);
-
-  const allTsunamiRings = useMemo(() => {
-    return (tsunamis || [])
-      .filter(t => t.year != null)
-      .map(t => ({
-        ...t,
-        lat: t.lat,
-        lng: t.lng,
-        maxR: Math.max(4, (t.magnitude || 5) * 1.8),
-        propagationSpeed: 5,
-        repeatPeriod: 250,
-        color: () => 'rgba(0, 200, 255, 0.9)', // Vibrant blue for tsunamis
-        label: t.location || 'Tsunami Event',
-        isTsunami: true,
-      }));
-  }, [tsunamis]);
-
-  useEffect(() => {
-    if (!globeRef.current) return;
-    const globe = globeRef.current;
-
-    const validRegions = regions || [];
-
-    const activeTsunamis = currentYear !== null
-      ? allTsunamiRings.filter(t => Math.abs(t.year - currentYear) <= 2)
-      : [];
-
-    const allRingData = [...regionRings, ...activeTsunamis];
-
-    // Draw arcs cascading from the most critical region to all others
-    const sorted = [...validRegions].sort((a,b) => (b.threshold_proximity_score||0) - (a.threshold_proximity_score||0));
-    const critical = sorted[0];
-    let arcData = [];
-    if (critical && regions.length > 1) {
-      arcData = regions.filter(r => r.id !== critical.id).map(r => ({
-        startLat: critical.lat,
-        startLng: critical.lon,
-        endLat: r.lat,
-        endLng: r.lon,
-        color: ['rgba(230, 126, 34, 0.8)', 'rgba(20, 189, 172, 0.1)'],
-        stroke: 0.3 + ((r.threshold_proximity_score||0) * 0.05)
-      }));
-    }
-
-    globe
-      .ringsData(allRingData)
-      .ringColor((d) => d.color)
-      .ringMaxRadius((d) => d.maxR)
-      .ringPropagationSpeed((d) => d.propagationSpeed)
-      .ringRepeatPeriod((d) => d.repeatPeriod)
-      .arcsData(arcData);
-      
-  }, [regions, tsunamis, currentYear, navigate]);
-
-  function getColor(score, threat = "thermal") {
-    // Increased vibrance for colorful mode requirement
-    const palette = {
-      acidification: [0, 255, 204], // Vibrant cyan/teal
-      thermal: score >= 8 ? [255, 51, 102] : [255, 153, 0], // Bright pink-red or hyper-orange
-      hypoxia: [178, 102, 255], // Neon purple
-    };
-    const [r, g, b] = palette[threat] || palette.thermal;
-    return (t) => `rgba(${r}, ${g}, ${b}, ${1 - t})`;
-  }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="w-full h-full relative pointer-events-auto overflow-hidden">
-      <div 
-        ref={containerRef} 
-        className="h-full w-full cursor-pointer mix-blend-screen" 
-        style={{ filter: "drop-shadow(0 0 30px rgba(10,132,255,0.15))" }}
+    <div className="relative h-full w-full overflow-hidden">
+      <div
+        ref={containerRef}
+        className="h-full w-full"
       />
 
-      {/* Futuristic Hover Tooltip */}
-      {hoverD && !hoverD.isTsunami && (
-        <div
-          className="absolute pointer-events-none z-50 p-5 rounded-2xl transition-all duration-300 ease-out"
-          style={{
-            left: "50%",
-            top: "50%",
-            transform: "translate(60px, -50%)",
-            background: "linear-gradient(145deg, rgba(14,28,51,0.95) 0%, rgba(10,22,40,0.98) 100%)",
-            border: `1px solid ${getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0.6)}`,
-            boxShadow: `0 20px 60px -10px ${getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0.4)}, inset 0 1px 0 rgba(255,255,255,0.1)`,
-            backdropFilter: "blur(12px)",
-          }}
-        >
-          <div className="flex items-center gap-3 mb-2">
-             <div 
-                className="w-3 h-3 rounded-full animate-pulse" 
-                style={{ backgroundColor: getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0) }}
-             />
-             <h3 className="text-xl font-bold text-white tracking-wide">{hoverD.name}</h3>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4 mt-4">
-             <div className="bg-black/30 rounded-lg p-3 border border-white/5">
-                <div className="text-xs text-grey-mid uppercase tracking-widest mb-1">Score</div>
-                <div 
-                  className="text-3xl font-mono"
-                  style={{ color: getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0) }}
-                >
-                  {(hoverD.threshold_proximity_score || 0).toFixed(1)}
-                </div>
-             </div>
-             
-             <div className="bg-black/30 rounded-lg p-3 border border-white/5">
-                <div className="text-xs text-grey-mid uppercase tracking-widest mb-1">Threshold</div>
-                <div className="text-3xl font-mono text-white">
-                  T-{hoverD.days_to_threshold || 0}
-                </div>
-             </div>
-          </div>
-          
-          <div className="mt-4 text-sm text-grey-light/90 border-l-2 pl-3" style={{ borderColor: getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0.4) }}>
-             {hoverD.primary_driver}
-          </div>
-          <div className="mt-3 text-sm flex justify-between items-center text-grey-mid">
-             <span>Estimated Gap:</span>
-             <span className="text-white font-mono">${((hoverD.funding_gap || 0) / 1000000).toFixed(1)}M</span>
-          </div>
-          
-          <div className="mt-5 w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg py-2 text-center font-bold uppercase tracking-widest transition-colors cursor-pointer" style={{ color: getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0) }}>
-            Analyze Deep Threat Profile →
-          </div>
-        </div>
-      )}
-
-      {/* Hover for Tsunamis */}
-      {hoverD && hoverD.isTsunami && (
-        <div
-          className="absolute pointer-events-none z-50 p-5 rounded-2xl transition-all duration-300 ease-out"
-          style={{
-            left: "50%",
-            top: "50%",
-            transform: "translate(60px, -50%)",
-            background: "linear-gradient(145deg, rgba(8, 22, 43, 0.95) 0%, rgba(2, 10, 20, 0.98) 100%)",
-            border: "1px solid rgba(0, 200, 255, 0.6)",
-            boxShadow: "0 20px 60px -10px rgba(0, 200, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-            backdropFilter: "blur(12px)",
-          }}
-        >
-          <div className="flex items-center gap-3 mb-2">
-             <div 
-                className="w-3 h-3 rounded-full animate-pulse bg-cyan-400"
-             />
-             <h3 className="text-xl font-bold text-white tracking-wide uppercase">{hoverD.label}</h3>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4 mt-4">
-             <div className="bg-black/30 rounded-lg p-3 border border-white/5">
-                <div className="text-xs text-grey-mid uppercase tracking-widest mb-1">Magnitude</div>
-                <div className="text-3xl font-mono text-cyan-400">
-                  {(hoverD.magnitude || 0).toFixed(1)}
-                </div>
-             </div>
-             
-             <div className="bg-black/30 rounded-lg p-3 border border-white/5">
-                <div className="text-xs text-grey-mid uppercase tracking-widest mb-1">Year</div>
-                <div className="text-3xl font-mono text-white">
-                  {hoverD.year}
-                </div>
-             </div>
-          </div>
-          
-          {(hoverD.max_water_height != null || hoverD.deaths != null) && (
-            <div className="mt-4 text-sm text-grey-light/90 border-l-2 pl-3 border-cyan-500">
-               {hoverD.max_water_height != null && <div>Max Water Height: {hoverD.max_water_height}m</div>}
-               {hoverD.deaths != null && <div>Recorded Deaths: {hoverD.deaths}</div>}
-               {hoverD.cause != null && <div className="mt-1 opacity-70">Cause: {hoverD.cause}</div>}
-            </div>
-          )}
-        </div>
-      )}
-
       {currentYear !== null && (
-        <div className="absolute bottom-8 right-10 z-0 pointer-events-none">
-           <div className="text-[120px] font-black text-white mix-blend-overlay opacity-20 tracking-tighter" style={{ textShadow: '0 0 40px rgba(255,255,255,0.4)', WebkitTextStroke: '1px rgba(255,255,255,0.1)' }}>
-               {currentYear}
-           </div>
-           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xl font-bold text-cyan-300 opacity-60 tracking-widest uppercase">
-               Tsunami Timeline
-           </div>
+        <div className="pointer-events-none absolute bottom-10 left-1/2 z-10 -translate-x-1/2 text-center select-none">
+          <div
+            className="font-black leading-none text-white/10"
+            style={{ fontSize: "clamp(80px,10vw,130px)", letterSpacing: "-0.04em", textShadow: "0 0 80px rgba(0,210,255,0.25)" }}
+          >
+            {currentYear}
+          </div>
+          <div className="mt-1 text-xs font-bold uppercase tracking-[0.3em] text-cyan-400/40">
+            Tsunami Archive
+          </div>
         </div>
-      )}
-
-      {/* Risk assessment card — shown on arbitrary globe click */}
-      {(loadingQuick || quick) && (
-        <RiskCard
-          quick={quick}
-          enrich={enrich}
-          loadingQuick={loadingQuick}
-          loadingEnrich={loadingEnrich}
-          onClose={() => {
-            clear();
-            if (globeRef.current) globeRef.current.controls().autoRotate = true;
-          }}
-        />
       )}
     </div>
   );
 }
+
+// ── Color helpers ─────────────────────────────────────────────────────────────
+function ringColorFn(score, threat = "thermal") {
+  if (threat === "acidification") return (t) => `rgba(0,230,200,${1 - t})`;
+  if (threat === "hypoxia")       return (t) => `rgba(170,90,255,${1 - t})`;
+  if (score >= 8)                 return (t) => `rgba(255,40,90,${1 - t})`;
+  if (score >= 6)                 return (t) => `rgba(255,140,0,${1 - t})`;
+  return                                 (t) => `rgba(20,180,170,${1 - t})`;
+}
+

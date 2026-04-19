@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 _ML_AVAILABLE = False
 _TippingPointClassifier = None
 _DaysToThresholdForecaster = None
-_CounterfactualCostEstimator = None
+_ThresholdNet = None
+_THRESHOLD_NET_AVAILABLE = False
 
 try:
     _backend_dir = os.path.dirname(os.path.abspath(__file__))
@@ -36,14 +37,61 @@ try:
 except Exception as exc:
     logger.warning("ML models could not be imported — falling back to simple math. Reason: %s", exc)
 
+try:
+    import pathlib as _pl
+    _threshold_net_weights = _pl.Path(os.path.abspath(__file__)).parents[2] / "ml" / "saved_models" / "threshold_net_best.pt"
+    if _threshold_net_weights.exists():
+        import torch as _torch
+        from threshold_net import ThresholdNet as _ThresholdNet, REGION_TO_IDX as _REGION_TO_IDX
+        _THRESHOLD_NET_AVAILABLE = True
+        logger.info("ThresholdNet weights found at %s", _threshold_net_weights)
+    else:
+        logger.info("ThresholdNet weights not found at %s — upload ml/saved_models/threshold_net_best.pt to enable", _threshold_net_weights)
+except Exception as exc:
+    logger.warning("ThresholdNet could not be loaded: %s", exc)
+
 
 class DemoModelRegistry:
     def __init__(self) -> None:
         self.loaded = False
         self._classifier = None
         self._forecaster = None
+        self._threshold_net = None
+        self._threshold_net_meta: dict = {}   # mean, std, feature_cols from checkpoint
 
     def load(self) -> None:
+        # ── ThresholdNet (BiLSTM + Attention) — preferred if weights exist ──
+        if _THRESHOLD_NET_AVAILABLE:
+            try:
+                import pathlib, torch
+                weights_path = pathlib.Path(os.path.abspath(__file__)).parents[2] / "ml" / "saved_models" / "threshold_net_best.pt"
+                ckpt = torch.load(weights_path, map_location="cpu", weights_only=False)
+                args = ckpt.get("args", {})
+                net = _ThresholdNet(
+                    hidden_size     = args.get("hidden", 256),
+                    num_lstm_layers = args.get("lstm_layers", 2),
+                    num_heads       = args.get("heads", 4),
+                    mlp_hidden      = args.get("hidden", 256),
+                    dropout         = 0.0,   # inference — no dropout
+                )
+                net.load_state_dict(ckpt["model_state"])
+                net.eval()
+                self._threshold_net = net
+                self._threshold_net_meta = {
+                    "mean":         ckpt.get("mean", []),
+                    "std":          ckpt.get("std", []),
+                    "feature_cols": ckpt.get("feature_cols", []),
+                    "val_mae":      ckpt.get("val_mae", None),
+                }
+                logger.info(
+                    "ThresholdNet loaded — val_mae=%.4f",
+                    self._threshold_net_meta.get("val_mae") or 0,
+                )
+            except Exception as exc:
+                logger.warning("ThresholdNet load failed: %s", exc)
+                self._threshold_net = None
+
+        # ── Legacy TippingPointClassifier fallback ──────────────────────────
         if _ML_AVAILABLE:
             try:
                 import pathlib
@@ -316,16 +364,74 @@ class DemoModelRegistry:
             "numarts": float(r.get("NUMARTS", 0.0)),
         }
 
+        # ── ThresholdNet inference (preferred) ────────────────────────────
+        if self._threshold_net is not None:
+            try:
+                import torch, numpy as np, pathlib as pl
+                meta = self._threshold_net_meta
+                feat_cols = meta.get("feature_cols", [
+                    "sst_anomaly", "o2_current", "dhw_current", "bleaching_alert_level",
+                    "co2_regional_ppm", "chlorophyll_anomaly", "nitrate_anomaly", "conflict_index",
+                ])
+                mean = np.array(meta.get("mean", [0.0] * len(feat_cols)), dtype=np.float32)
+                std  = np.array(meta.get("std",  [1.0] * len(feat_cols)), dtype=np.float32)
+
+                # Pull last 30 rows from REGION_FEATURES for the window
+                rf_rows = db.execute(
+                    text("SELECT * FROM region_features WHERE region_id = :rid ORDER BY date DESC LIMIT 30"),
+                    {"rid": region_id},
+                ).fetchall()
+
+                if rf_rows:
+                    # Map region_features columns to training feature order
+                    col_map = {
+                        "sst_anomaly": "sst_anomaly", "o2_current": "o2_current",
+                        "dhw_current": "dhw_current", "bleaching_alert_level": "bleaching_alert_level",
+                        "co2_regional_ppm": "co2_regional_ppm", "chlorophyll_anomaly": "chlorophyll_anomaly",
+                        "nitrate_anomaly": "nitrate_anomaly", "conflict_index": "conflict_index",
+                    }
+                    fill = {"o2_current": 5.0, "co2_regional_ppm": 415.0}
+                    window = []
+                    for rr in reversed(rf_rows):   # oldest first
+                        m = {k: v for k, v in dict(rr._mapping).items()}
+                        row_vec = [float(m.get(col_map.get(c, c)) or fill.get(c, 0.0)) for c in feat_cols]
+                        window.append(row_vec)
+
+                    arr = np.array(window, dtype=np.float32)
+                    arr = (arr - mean) / std
+                    x = torch.from_numpy(arr).unsqueeze(0)   # (1, T, F)
+                    region_idx = torch.tensor([_REGION_TO_IDX.get(region_id, 0)])
+
+                    with torch.no_grad():
+                        score = float(self._threshold_net(x, region_idx).item())
+
+                    return {
+                        "region_id": region_id,
+                        "threshold_proximity_score": round(score, 3),
+                        "confidence": meta.get("val_mae", 0.5),
+                        "primary_driver": f"ThresholdNet (BiLSTM+Attention, val_mae={meta.get('val_mae', '?'):.3f})",
+                        "breakdown": [
+                            {"key": "thermal",      "label": "Water Temperature",  "value": features["t_degc"],    "detail": f"{features['t_degc']:.1f}°C"},
+                            {"key": "oxygen",       "label": "Dissolved Oxygen",   "value": features["o2ml_l"],    "detail": f"{features['o2ml_l']:.2f} ml/L"},
+                            {"key": "productivity", "label": "Chlorophyll",        "value": features["chlora"],    "detail": f"{features['chlora']:.2f} mg/m³"},
+                            {"key": "stability",    "label": "Political Stability","value": features["goldstein"], "detail": f"Goldstein: {features['goldstein']:.1f}"},
+                        ],
+                        "timestamp": r.get("DATE", date.today()).isoformat() if hasattr(r.get("DATE", None), "isoformat") else str(r.get("DATE", date.today())),
+                    }
+            except Exception as exc:
+                logger.warning("ThresholdNet inference failed: %s", exc)
+
+        # ── Legacy TippingPointClassifier fallback ────────────────────────
         if self._classifier is not None:
             try:
                 result = self._classifier.predict(features)
                 result["region_id"] = region_id
                 result["timestamp"] = r.get("DATE", date.today()).isoformat()
                 result["breakdown"] = [
-                    {"key": "thermal", "label": "Water Temperature", "value": features["t_degc"], "detail": f"{features['t_degc']:.1f}°C"},
-                    {"key": "oxygen", "label": "Dissolved Oxygen", "value": features["o2ml_l"], "detail": f"{features['o2ml_l']:.2f} ml/L"},
-                    {"key": "productivity", "label": "Chlorophyll", "value": features["chlora"], "detail": f"{features['chlora']:.2f} mg/m³"},
-                    {"key": "stability", "label": "Political Stability", "value": features["goldstein"], "detail": f"Goldstein Score: {features['goldstein']:.1f}"},
+                    {"key": "thermal",      "label": "Water Temperature",  "value": features["t_degc"],    "detail": f"{features['t_degc']:.1f}°C"},
+                    {"key": "oxygen",       "label": "Dissolved Oxygen",   "value": features["o2ml_l"],    "detail": f"{features['o2ml_l']:.2f} ml/L"},
+                    {"key": "productivity", "label": "Chlorophyll",        "value": features["chlora"],    "detail": f"{features['chlora']:.2f} mg/m³"},
+                    {"key": "stability",    "label": "Political Stability","value": features["goldstein"], "detail": f"Goldstein Score: {features['goldstein']:.1f}"},
                 ]
                 return result
             except Exception as exc:

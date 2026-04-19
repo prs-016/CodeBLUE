@@ -167,19 +167,22 @@ def score_from_features(
 # Step 3: Read features, recompute, write back via MERGE
 # ---------------------------------------------------------------------------
 def _days_from_score(s: float) -> int:
-    if s >= 9.5: return 14
-    if s >= 9.0: return 30
-    if s >= 8.0: return 47
-    if s >= 7.0: return 90
-    if s >= 6.0: return 150
-    if s >= 5.0: return 240
-    return 365
+    # Full 0–10 scale — current data peaks ~5.2 so spread coverage downward
+    if s >= 9.0: return 14
+    if s >= 8.0: return 30
+    if s >= 7.0: return 60
+    if s >= 6.0: return 90
+    if s >= 5.0: return 150
+    if s >= 4.0: return 240
+    if s >= 3.0: return 365
+    if s >= 2.0: return 500
+    return 730
 
 
 def _alert_from_score(s: float) -> str:
-    if s >= 8.5: return "critical"
-    if s >= 7.0: return "high"
-    if s >= 5.5: return "watch"
+    if s >= 7.0: return "critical"
+    if s >= 5.0: return "high"
+    if s >= 3.5: return "watch"
     return "normal"
 
 

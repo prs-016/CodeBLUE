@@ -7,12 +7,15 @@ const DISASTER_ICONS = { flood: "🌊", wildfire: "🔥", drought: "☀️", sto
 export default function RiskCard({ quick, enrich, loadingQuick, loadingEnrich, onClose }) {
   if (loadingQuick) {
     return (
-      <div className="absolute right-6 top-20 z-50 w-80 bg-black/80 border border-grey-dark rounded-xl backdrop-blur-md p-5 shadow-2xl">
+      <div className="w-80 bg-black/85 border border-grey-dark rounded-2xl backdrop-blur-xl p-5 shadow-2xl">
         <div className="animate-pulse space-y-3">
-          <div className="h-5 bg-grey-dark/50 rounded w-2/3" />
-          <div className="h-8 bg-grey-dark/50 rounded w-1/3" />
+          <div className="h-4 bg-grey-dark/50 rounded w-1/2" />
+          <div className="h-6 bg-grey-dark/50 rounded w-2/3" />
+          <div className="h-10 bg-grey-dark/50 rounded w-1/3 mt-2" />
+          <div className="h-px bg-grey-dark/40 my-3" />
           <div className="h-4 bg-grey-dark/50 rounded w-full" />
           <div className="h-4 bg-grey-dark/50 rounded w-4/5" />
+          <div className="h-4 bg-grey-dark/50 rounded w-3/4" />
         </div>
       </div>
     );
@@ -26,8 +29,8 @@ export default function RiskCard({ quick, enrich, loadingQuick, loadingEnrich, o
 
   return (
     <div
-      className="absolute right-6 top-20 z-50 w-80 bg-black/85 border rounded-xl backdrop-blur-md p-5 shadow-2xl"
-      style={{ borderColor: riskColor + "66" }}
+      className="w-80 bg-black/90 border rounded-2xl backdrop-blur-xl p-5 shadow-[0_32px_80px_rgba(0,0,0,0.6)]"
+      style={{ borderColor: riskColor + "55", boxShadow: `0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px ${riskColor}22` }}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
