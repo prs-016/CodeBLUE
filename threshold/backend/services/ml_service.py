@@ -106,13 +106,13 @@ class DemoModelRegistry:
                     text(
                         """
                         SELECT DATE, T_DEGC, O2ML_L, SALNTY, CHLORA, NO3UM, BAROMETER
-                        FROM CALCOFI.PUBLIC.CALCOFI_TSUNAMI_FEATURES
+                        FROM CALCOFI_TSUNAMI_FEATURES
                         WHERE (LAT_DEC - :lat)*(LAT_DEC - :lat) + (LON_DEC - :lon)*(LON_DEC - :lon) < 0.25
-                          AND DATE >= DATEADD(day, -180, CURRENT_DATE())
-                        ORDER BY DATE ASC
+                        ORDER BY DATE DESC
+                        LIMIT 180
                         """
                     ),
-                    {"lat": lat, "lon": lon, "region_id": region_id},
+                    {"lat": lat, "lon": lon},
                 ).fetchall()
 
                 if len(rows) >= 14:
@@ -192,41 +192,81 @@ class DemoModelRegistry:
     # counterfactual_estimate
     # ------------------------------------------------------------------
 
+    # Prevention/recovery breakdown ratios per threat type
+    _BREAKDOWN = {
+        "Coral Bleaching":  {"monitoring": 0.22, "thermal_intervention": 0.38, "reef_restoration": 0.40,
+                             "fishery_loss": 0.30, "tourism_loss": 0.45, "infra_loss": 0.15, "ag_loss": 0.10},
+        "Reef Collapse":    {"monitoring": 0.18, "marine_protected_areas": 0.42, "reef_restoration": 0.40,
+                             "fishery_loss": 0.40, "food_security_loss": 0.35, "infra_loss": 0.15, "tourism_loss": 0.10},
+        "Hypoxia":          {"monitoring": 0.15, "nutrient_reduction": 0.55, "oxygen_mitigation": 0.30,
+                             "fishery_loss": 0.45, "tourism_loss": 0.20, "infra_loss": 0.10, "ag_loss": 0.25},
+        "Heatwave":         {"monitoring": 0.20, "fishery_management": 0.50, "habitat_restoration": 0.30,
+                             "fishery_loss": 0.50, "tourism_loss": 0.25, "infra_loss": 0.15, "ag_loss": 0.10},
+        "Storm Surge":      {"monitoring": 0.25, "coastal_barriers": 0.45, "mangrove_restoration": 0.30,
+                             "infra_loss": 0.45, "displacement_cost": 0.30, "ag_loss": 0.15, "fishery_loss": 0.10},
+        "Salinity":         {"monitoring": 0.20, "water_management": 0.50, "crop_adaptation": 0.30,
+                             "ag_loss": 0.50, "fishery_loss": 0.25, "infra_loss": 0.15, "displacement_cost": 0.10},
+        "Dead Zone":        {"monitoring": 0.18, "oxygen_intervention": 0.47, "fishery_management": 0.35,
+                             "fishery_loss": 0.55, "food_security_loss": 0.25, "infra_loss": 0.10, "tourism_loss": 0.10},
+        "Eutrophication":   {"monitoring": 0.20, "nutrient_reduction": 0.50, "wetland_restoration": 0.30,
+                             "fishery_loss": 0.35, "tourism_loss": 0.35, "infra_loss": 0.20, "ag_loss": 0.10},
+    }
+
     def counterfactual_estimate(self, db: Session, region_id: str) -> dict:
-        row = db.execute(
-            text("SELECT name, current_score, primary_threat FROM regions WHERE id = :region_id"),
+        region_row = db.execute(
+            text("SELECT name, current_score, primary_threat, funding_gap FROM regions WHERE id = :region_id"),
             {"region_id": region_id},
         ).fetchone()
-        if row is None:
+        if region_row is None:
             raise LookupError(region_id)
-
-        mapping = row._mapping
+        mapping = region_row._mapping
         region_name = mapping["name"]
         current_score = float(mapping["current_score"])
+        primary_threat = mapping["primary_threat"]
+        funding_gap = float(mapping["funding_gap"] or 0)
 
-        return self._simple_counterfactual(region_id, region_name, current_score, mapping["primary_threat"])
+        # Pull real historical cases for this region to anchor cost estimates
+        case_rows = db.execute(
+            text("""
+                SELECT prevention_cost, recovery_cost, cost_multiplier, year_crossed, event_name
+                FROM counterfactual_cases
+                WHERE region_id = :region_id
+                ORDER BY year_crossed DESC
+                LIMIT 3
+            """),
+            {"region_id": region_id},
+        ).fetchall()
 
-    def _simple_counterfactual(self, region_id: str, region_name: str, score: float, primary_threat: str) -> dict:
-        prevention_cost = round(4_000_000 + score * 2_500_000, 2)
-        recovery_cost = round(prevention_cost * (4 + score / 2), 2)
+        if case_rows:
+            # Anchor on most recent real case, scale by current score
+            latest = case_rows[0]._mapping
+            scale = 1 + (current_score - 5.0) * 0.15
+            prevention_cost = round(float(latest["prevention_cost"]) * scale, 2)
+            recovery_cost = round(float(latest["recovery_cost"]) * scale, 2)
+            cost_multiplier = round(recovery_cost / max(prevention_cost, 1), 2)
+            anchor_note = f"Anchored on {latest['event_name']} ({latest['year_crossed']})"
+        else:
+            prevention_cost = round(funding_gap * 0.4, 2)
+            recovery_cost = round(prevention_cost * (4 + current_score / 2), 2)
+            cost_multiplier = round(recovery_cost / max(prevention_cost, 1), 2)
+            anchor_note = primary_threat
+
+        bd = self._BREAKDOWN.get(primary_threat, self._BREAKDOWN["Hypoxia"])
+        prev_keys = [k for k in bd if k != "fishery_loss" and "loss" not in k and "displacement" not in k]
+        rec_keys  = [k for k in bd if "loss" in k or "displacement" in k]
+
+        prevention_breakdown = {k: round(prevention_cost * bd[k], 2) for k in prev_keys}
+        recovery_breakdown   = {k: round(recovery_cost * bd[k], 2) for k in rec_keys}
+
         return {
             "region_id": region_id,
             "region_name": region_name,
             "prevention_cost_usd": prevention_cost,
             "recovery_cost_usd": recovery_cost,
-            "cost_multiplier": round(recovery_cost / prevention_cost, 2),
-            "optimal_intervention_type": f"{primary_threat} resilience package",
-            "prevention_breakdown": {
-                "monitoring": round(prevention_cost * 0.18, 2),
-                "local_response": round(prevention_cost * 0.47, 2),
-                "ecosystem_restoration": round(prevention_cost * 0.35, 2),
-            },
-            "recovery_breakdown": {
-                "ag_loss": round(recovery_cost * 0.18, 2),
-                "infra_loss": round(recovery_cost * 0.31, 2),
-                "fishery_loss": round(recovery_cost * 0.24, 2),
-                "tourism_loss": round(recovery_cost * 0.27, 2),
-            },
+            "cost_multiplier": cost_multiplier,
+            "optimal_intervention_type": f"{primary_threat} resilience package — {anchor_note}",
+            "prevention_breakdown": prevention_breakdown,
+            "recovery_breakdown": recovery_breakdown,
         }
 
     # ------------------------------------------------------------------
@@ -238,19 +278,20 @@ class DemoModelRegistry:
 
         query = text("""
             WITH NearestStation AS (
-                SELECT 
-                    T_DEGC, O2ML_L, SALNTY, CHLORA, NO3UM, PO4UM, SIO3UM, 
+                SELECT
+                    T_DEGC, O2ML_L, SALNTY, CHLORA, NO3UM, PO4UM, SIO3UM,
                     WIND_SPD, BAROMETER, DATE
-                FROM CALCOFI.PUBLIC.CALCOFI_TSUNAMI_FEATURES
+                FROM CALCOFI_TSUNAMI_FEATURES
                 ORDER BY (LAT_DEC - :lat)*(LAT_DEC - :lat) + (LON_DEC - :lon)*(LON_DEC - :lon) ASC, DATE DESC
                 LIMIT 1
             ),
             Narrative AS (
-                SELECT 
-                    AVG(GOLDSTEIN) as GOLDSTEIN, 
+                SELECT
+                    AVG(GOLDSTEIN) as GOLDSTEIN,
                     SUM(NUMARTS) as NUMARTS
-                FROM CALCOFI.PUBLIC.GDELT
-                WHERE DATE = (SELECT DATE FROM NearestStation)
+                FROM GDELT
+                WHERE ACTIONGEOLAT BETWEEN :lat - 2 AND :lat + 2
+                  AND ACTIONGEOLONG BETWEEN :lon - 2 AND :lon + 2
             )
             SELECT f.*, COALESCE(n.GOLDSTEIN, 0) as GOLDSTEIN, COALESCE(n.NUMARTS, 0) as NUMARTS
             FROM NearestStation f, Narrative n

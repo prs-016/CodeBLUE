@@ -49,6 +49,11 @@ export default function RegionBrief({
             <div className="text-xs uppercase tracking-[0.32em] text-grey-mid">Region intelligence brief</div>
             <h2 className="mt-3 text-4xl font-semibold text-white">{region.name}</h2>
             <p className="mt-2 max-w-2xl text-sm text-grey-mid">{region.primary_driver}</p>
+            {region.trend_summary && (
+              <p className="mt-3 max-w-2xl rounded-[12px] border border-grey-dark/50 bg-black/20 px-3 py-2 text-xs text-grey-light">
+                {region.trend_summary}
+              </p>
+            )}
           </div>
           <div className="rounded-[24px] border border-white/10 bg-black/20 px-5 py-4 text-right">
             <div className="text-xs uppercase tracking-[0.2em] text-grey-mid">{loading ? "Syncing" : brief.source}</div>
@@ -69,7 +74,7 @@ export default function RegionBrief({
               <AlertTriangle className="h-4 w-4 text-red-alert" />
               Alert level
             </div>
-            <div className="mt-2 font-mono text-3xl text-white">{region.alert_level ?? region.bleaching_alert_level ?? 0}/4</div>
+            <div className="mt-2 font-mono text-3xl text-white">{region.alert_level ?? region.latest_bleaching_alert ?? 0}/4</div>
           </div>
           <div className="rounded-[24px] border border-grey-dark/70 bg-black/20 p-4">
             <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-grey-mid">
@@ -79,6 +84,29 @@ export default function RegionBrief({
             <div className="mt-2 text-2xl font-medium capitalize text-white">{region.primary_threat}</div>
           </div>
         </div>
+
+        {(region.latest_co2_ppm || region.latest_dhw || region.latest_nitrate_anomaly) && (
+          <div className="mt-4 flex flex-wrap gap-3">
+            {region.latest_co2_ppm != null && (
+              <div className="rounded-[16px] border border-grey-dark/50 bg-black/20 px-4 py-2 text-xs">
+                <span className="text-grey-mid uppercase tracking-[0.18em]">CO₂</span>
+                <span className="ml-2 font-mono text-white">{Number(region.latest_co2_ppm).toFixed(1)} ppm</span>
+              </div>
+            )}
+            {region.latest_dhw != null && (
+              <div className="rounded-[16px] border border-grey-dark/50 bg-black/20 px-4 py-2 text-xs">
+                <span className="text-grey-mid uppercase tracking-[0.18em]">DHW</span>
+                <span className="ml-2 font-mono text-white">{Number(region.latest_dhw).toFixed(1)} °C-wks</span>
+              </div>
+            )}
+            {region.latest_nitrate_anomaly != null && (
+              <div className="rounded-[16px] border border-grey-dark/50 bg-black/20 px-4 py-2 text-xs">
+                <span className="text-grey-mid uppercase tracking-[0.18em]">Nitrate Δ</span>
+                <span className="ml-2 font-mono text-white">{Number(region.latest_nitrate_anomaly).toFixed(2)} µmol/L</span>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <ThresholdScoreBreakdown score={score} primaryDriver={region.primary_driver} breakdown={scoreBreakdown} />

@@ -62,7 +62,8 @@ def get_region(region_id: str, db: Session = Depends(get_db)) -> RegionDetail:
     latest_feature = db.execute(
         text(
             """
-            SELECT sst_anomaly, o2_current, chlorophyll_anomaly, active_situation_reports
+            SELECT sst_anomaly, o2_current, chlorophyll_anomaly, active_situation_reports,
+                   co2_regional_ppm, dhw_current, bleaching_alert_level, nitrate_anomaly
             FROM region_features
             WHERE region_id = :region_id
             ORDER BY date DESC
@@ -74,6 +75,7 @@ def get_region(region_id: str, db: Session = Depends(get_db)) -> RegionDetail:
     if latest_feature is None:
         raise HTTPException(status_code=404, detail="Region features not found")
 
+    f = latest_feature._mapping
     return RegionDetail(
         id=region.id,
         name=region.name,
@@ -87,10 +89,14 @@ def get_region(region_id: str, db: Session = Depends(get_db)) -> RegionDetail:
         population_affected=region.population_affected,
         primary_driver=region.primary_driver,
         trend_summary=region.trend_summary,
-        latest_sst_anomaly=latest_feature.sst_anomaly,
-        latest_o2_current=latest_feature.o2_current,
-        latest_chlorophyll_anomaly=latest_feature.chlorophyll_anomaly,
-        active_situation_reports=latest_feature.active_situation_reports,
+        latest_sst_anomaly=f["sst_anomaly"],
+        latest_o2_current=f["o2_current"],
+        latest_chlorophyll_anomaly=f["chlorophyll_anomaly"],
+        active_situation_reports=f["active_situation_reports"],
+        latest_co2_ppm=f.get("co2_regional_ppm"),
+        latest_dhw=f.get("dhw_current"),
+        latest_bleaching_alert=f.get("bleaching_alert_level"),
+        latest_nitrate_anomaly=f.get("nitrate_anomaly"),
     )
 
 

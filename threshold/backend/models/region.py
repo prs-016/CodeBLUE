@@ -31,6 +31,10 @@ class RegionDetail(RegionSummary):
     latest_o2_current: float
     latest_chlorophyll_anomaly: float
     active_situation_reports: int
+    latest_co2_ppm: Optional[float] = None
+    latest_dhw: Optional[float] = None
+    latest_bleaching_alert: Optional[float] = None
+    latest_nitrate_anomaly: Optional[float] = None
 
 
 class TrajectoryPoint(BaseModel):

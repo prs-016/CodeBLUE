@@ -5,7 +5,9 @@ const METRICS = [
   { key: "sst_anomaly", label: "SST anomaly", color: "#E67E22" },
   { key: "o2_current", label: "Dissolved oxygen", color: "#14BDAC" },
   { key: "chlorophyll_anomaly", label: "Chlorophyll anomaly", color: "#8B5CF6" },
-  { key: "co2_regional_ppm", label: "Regional CO2 proxy", color: "#F1C40F" },
+  { key: "co2_regional_ppm", label: "Regional CO₂ proxy", color: "#F1C40F" },
+  { key: "nitrate_anomaly", label: "Nitrate anomaly", color: "#27AE60" },
+  { key: "dhw_current", label: "Degree heating weeks", color: "#E74C3C" },
 ];
 
 function makePath(points, width, height, padding) {
