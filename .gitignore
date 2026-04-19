@@ -118,8 +118,7 @@ dist
 
 # Firebase cache directory
 .firebase/
-/.claude
-/dataset
+
 # TernJS port file
 .tern-port
 
@@ -141,3 +140,6 @@ vite.config.ts.timestamp-*
 
 .env
 .env.example
+
+.claude
+dataset/
