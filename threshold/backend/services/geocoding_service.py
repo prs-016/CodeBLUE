@@ -20,8 +20,16 @@ async def reverse_geocode(lat: float, lon: float) -> dict:
     if data.get("status") != "OK" or not data.get("results"):
         return {"region_name": f"{lat:.2f},{lon:.2f}", "country": "Unknown", "admin_level": "coordinates"}
 
+    # Aggregate components from all results (least specific to most specific)
+    # This prevents 'Unknown' when the primary result is just a Plus Code in a remote area
+    components = {}
+    for res in reversed(data["results"]):
+        for c in res.get("address_components", []):
+            if c.get("types"):
+                components[c["types"][0]] = c["long_name"]
+
+    # We still want the most specific formatted address as a fallback
     result = data["results"][0]
-    components = {c["types"][0]: c["long_name"] for c in result.get("address_components", []) if c.get("types")}
 
     region_name = (
         components.get("administrative_area_level_2")

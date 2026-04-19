@@ -56,14 +56,14 @@ class RegionTrajectory(BaseModel):
 
 class StressSignalPoint(BaseModel):
     date: str
-    sst_anomaly: float
-    o2_current: float
-    chlorophyll_anomaly: float
-    co2_regional_ppm: float
-    nitrate_anomaly: float
-    threshold_proximity_score: float
-    scientific_event_flag: bool
-    active_situation_reports: int
+    sst_anomaly: Optional[float] = None
+    o2_current: Optional[float] = None
+    chlorophyll_anomaly: Optional[float] = None
+    co2_regional_ppm: Optional[float] = None
+    nitrate_anomaly: Optional[float] = None
+    threshold_proximity_score: Optional[float] = None
+    scientific_event_flag: bool = False
+    active_situation_reports: int = 0
     dhw_current: Optional[float] = None
     bleaching_alert_level: Optional[float] = None
 

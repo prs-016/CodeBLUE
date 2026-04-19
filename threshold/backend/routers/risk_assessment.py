@@ -16,6 +16,8 @@ from models.risk_assessment import (
 from services.disaster_inference import infer_disaster
 from services.gdelt_service import get_headlines
 from services.geocoding_service import reverse_geocode
+from services.nyne_service import search_relief_orgs
+from services.openmart_service import search_nonprofits
 from services.precip_service import get_weather
 
 
@@ -73,13 +75,15 @@ async def risk_enrich(req: RiskAssessmentRequest) -> EnrichRiskResponse:
 
     from services.gemini_service import search_charities
     
-    # Fire news + charities in parallel
+    # Fire news + charities in parallel (Hybrid: Orthogonal + Gemini)
     results = await asyncio.gather(
         get_headlines(region_name, disaster_type),
         search_charities(region_name, disaster_type),
+        search_nonprofits(region_name, disaster_type),
+        search_relief_orgs(region_name, disaster_type),
         return_exceptions=True,
     )
-    headlines_raw, gemini_raw = results
+    headlines_raw, gemini_raw, openmart_raw, nyne_raw = results
 
     errors: dict[str, str | None] = {"news": None, "charities": None}
 
@@ -90,10 +94,22 @@ async def risk_enrich(req: RiskAssessmentRequest) -> EnrichRiskResponse:
         headlines = [Headline(**h) for h in (headlines_raw or [])]
 
     charities: list[CharityResult] = []
-    if isinstance(gemini_raw, Exception):
-        errors["charities"] = str(gemini_raw)
-    else:
-        charities = [CharityResult(**c) for c in (gemini_raw or [])]
+    
+    # Merge Gemini results
+    if not isinstance(gemini_raw, Exception) and gemini_raw:
+        charities += [CharityResult(**c) for c in gemini_raw]
+
+    # Merge OpenMart results
+    if not isinstance(openmart_raw, Exception) and openmart_raw:
+        charities += [CharityResult(**c) for c in openmart_raw]
+        
+    # Merge NYNE results
+    if not isinstance(nyne_raw, Exception) and nyne_raw:
+        charities += [CharityResult(**c) for c in nyne_raw]
+
+    if isinstance(gemini_raw, Exception) and isinstance(openmart_raw, Exception) and isinstance(nyne_raw, Exception):
+        errors["charities"] = f"Gemini: {gemini_raw} | Ortho: {openmart_raw}"
+
 
     # Deduplicate charities by name
     seen: set[str] = set()

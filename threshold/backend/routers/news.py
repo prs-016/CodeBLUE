@@ -41,7 +41,7 @@ def get_attention_gap(db: Session = Depends(get_db)) -> list[dict]:
     response_model=list[dict],
     summary="Get region news feed",
 )
-def get_news(
+async def get_news(
     region_id: str,
     limit: int = Query(default=10, ge=1, le=50),
     days_back: int = Query(default=30, ge=1, le=365),
@@ -63,4 +63,15 @@ def get_news(
     params["limit"] = limit
 
     rows = db.execute(text(query), params).fetchall()
-    return [dict(row._mapping) for row in rows]
+    base_news = [dict(row._mapping) for row in rows]
+
+    if len(base_news) < 3:
+        # Trigger Gemini Live Research
+        from services.gemini_service import search_news
+        region_row = db.execute(text("SELECT name, primary_threat FROM regions WHERE id = :rid"), {"rid": region_id}).fetchone()
+        if region_row:
+            import asyncio
+            live_news = await search_news(region_row[0], region_row[1])
+            return base_news + live_news
+
+    return base_news

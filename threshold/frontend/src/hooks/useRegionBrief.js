@@ -68,6 +68,12 @@ export default function useRegionBrief(regionId) {
     dependencies: [regionId],
   });
 
+  const roundsState = useApiResource({
+    endpoint: regionId ? `/api/v1/funding/rounds` : null,
+    enabled: Boolean(regionId),
+    dependencies: [regionId],
+  });
+
   const loading =
     regionState.loading ||
     trajectoryState.loading ||
@@ -83,6 +89,8 @@ export default function useRegionBrief(regionId) {
     news: newsState.data ?? [],
     estimate: estimateState.data ?? null,
     charities: charitiesState.data ?? [],
+    rounds: roundsState.data ?? [],
+    activeRound: (roundsState.data ?? []).find((r) => r.region_id === regionId && r.status === "active") ?? null,
     scoreBreakdown: region ? summarizeDrivers(region) : [],
     loading,
     source: [

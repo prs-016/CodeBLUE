@@ -12,8 +12,10 @@ from models.charity import CharityDetail, CharitySummary
 router = APIRouter()
 
 
+import asyncio
 import hashlib
 from services.gemini_service import search_charities
+from services.openmart_service import search_nonprofits
 
 @router.get(
     "",
@@ -35,11 +37,24 @@ async def get_charities(
             disaster_type = row[1]
             
     try:
-        results = await search_charities(region_name, disaster_type)
+        # Hybrid fetch
+        gemini_task = asyncio.create_task(search_charities(region_name, disaster_type))
+        ortho_task  = asyncio.create_task(search_nonprofits(region_name, disaster_type))
+        
+        gemini_res, ortho_res = await asyncio.gather(gemini_task, ortho_task, return_exceptions=True)
+        
+        results = []
+        if not isinstance(gemini_res, Exception) and gemini_res:
+            results += gemini_res
+        if not isinstance(ortho_res, Exception) and ortho_res:
+            results += ortho_res
+            
+        if not results:
+            results = [{"name": "Global Giving - Climate Fund"}]
     except Exception as exc:
         import logging
-        logging.getLogger(__name__).error("search_charities FAILED: %s", exc)
-        results = [{"name": f"ROUTER ERROR: {exc}"}]
+        logging.getLogger(__name__).error("search_charities/nonprofits FAILED: %s", exc)
+        results = [{"name": "Global Relief Fund"}]
         
     summaries = []
     for c in results:

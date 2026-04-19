@@ -21,7 +21,7 @@ export default function WarRoomGlobe({ regions, onAssess }) {
   // ── Year animation ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!tsunamis?.length || currentYear !== null) return;
-    const years = tsunamis.map(t => t.year).filter(Boolean);
+    const years = tsunamis.map(t => t.year).filter(y => y != null && y >= 1900);
     if (years.length) setCurrentYear(Math.min(...years));
   }, [tsunamis, currentYear]);
 
@@ -32,7 +32,7 @@ export default function WarRoomGlobe({ regions, onAssess }) {
         const next = prev + 1;
         const max  = new Date().getFullYear();
         if (next > max) {
-          const years = tsunamis.map(t => t.year).filter(Boolean);
+          const years = tsunamis.map(t => t.year).filter(y => y != null && y >= 1900);
           return Math.min(...years);
         }
         return next;
@@ -83,7 +83,36 @@ export default function WarRoomGlobe({ regions, onAssess }) {
         }))
       : [];
 
-    globe.ringsData([...rr, ...activeTsunamis]);
+    // Expand regions with score >= 4 into a cluster of 7 red rings!
+    // The center ring + 6 immediate neighbors to form that intense localized cluster.
+    const clusterRings = [];
+    rr.forEach(r => {
+      const score = r.threshold_proximity_score || 0;
+      if (score >= 4) {
+        // Center ring (solid red, high propagation speed)
+        clusterRings.push({ ...r, color: (t) => `rgba(255,0,0,${1 - t})`, maxR: r.maxR });
+        
+        // 6 immediate neighbors to form the surrounding cluster inside a circle
+        const d = 1.6; // distance in degrees
+        const lngScale = Math.cos(r.lat * Math.PI / 180) || 1;
+        for (let i = 0; i < 6; i++) {
+          const angle = (Math.PI / 3) * i;
+          clusterRings.push({
+            lat: r.lat + d * Math.sin(angle),
+            lng: r.lng + (d * Math.cos(angle)) / lngScale,
+            maxR: r.maxR * 0.75, // slightly smaller neighbor rings
+            propagationSpeed: r.propagationSpeed * 0.9,
+            repeatPeriod: r.repeatPeriod,
+            color: (t) => `rgba(255,0,0,${0.8 - t})` // intensely red
+          });
+        }
+      } else {
+        // Keep normal styling for low severity
+        clusterRings.push(r);
+      }
+    });
+
+    globe.ringsData([...clusterRings, ...activeTsunamis]);
 
     // Arcs: most critical → all others
     const sorted = [...rr].sort(
@@ -130,6 +159,7 @@ export default function WarRoomGlobe({ regions, onAssess }) {
         // Hex grid
         .hexPolygonResolution(3)
         .hexPolygonMargin(0.62)
+        .hexPolygonColor(() => "rgba(20, 189, 172, 0.15)") // Cool dim teal for normal countries
         // Arcs
         .arcDashLength(0.35)
         .arcDashGap(0.15)
@@ -174,7 +204,10 @@ export default function WarRoomGlobe({ regions, onAssess }) {
 
       // Push whatever data is already loaded
       pushData(globe);
-    }).catch(console.error);
+    }).catch(err => {
+      console.error("Globe init error:", err);
+      if (document.body) document.body.innerHTML += '<div style="position:absolute;z-index:9999;color:red;background:black;padding:10px;top:0;">Globe Error: ' + err.message + '</div>';
+    });
 
     return () => {
       cancelled = true;
@@ -190,29 +223,19 @@ export default function WarRoomGlobe({ regions, onAssess }) {
         className="h-full w-full"
       />
 
-      {currentYear !== null && (
-        <div className="pointer-events-none absolute bottom-10 left-1/2 z-10 -translate-x-1/2 text-center select-none">
-          <div
-            className="font-black leading-none text-white/10"
-            style={{ fontSize: "clamp(80px,10vw,130px)", letterSpacing: "-0.04em", textShadow: "0 0 80px rgba(0,210,255,0.25)" }}
-          >
-            {currentYear}
-          </div>
-          <div className="mt-1 text-xs font-bold uppercase tracking-[0.3em] text-cyan-400/40">
-            Tsunami Archive
-          </div>
-        </div>
-      )}
+      {/* Year overlay removed — user preference */}
     </div>
   );
 }
 
 // ── Color helpers ─────────────────────────────────────────────────────────────
 function ringColorFn(score, threat = "thermal") {
+  // User requested anything moderate/high (not low) to light up bright red
+  if (score >= 4) return (t) => `rgba(255,0,0,${1 - t})`;
+
+  // Low severity fallback colors
   if (threat === "acidification") return (t) => `rgba(0,230,200,${1 - t})`;
   if (threat === "hypoxia")       return (t) => `rgba(170,90,255,${1 - t})`;
-  if (score >= 8)                 return (t) => `rgba(255,40,90,${1 - t})`;
-  if (score >= 6)                 return (t) => `rgba(255,140,0,${1 - t})`;
   return                                 (t) => `rgba(20,180,170,${1 - t})`;
 }
 
