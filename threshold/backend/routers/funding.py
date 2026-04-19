@@ -36,7 +36,8 @@ def get_funding_gap_radar(db: Session = Depends(get_db)) -> list[FundingGapItem]
                 r.funding_gap,
                 r.primary_threat AS threat_type,
                 r.population_affected,
-                ma.attention_gap,
+                r.primary_driver,
+                COALESCE(ma.attention_gap, r.current_score * 0.4) AS attention_gap,
                 ROUND(
                     COALESCE(fr.raised_amount / NULLIF(fr.target_amount, 0), 0.0),
                     4

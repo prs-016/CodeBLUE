@@ -19,6 +19,14 @@ export default function useFundingRounds() {
     endpoint: "/api/v1/funding/impact",
     fallbackData: mockImpactCases,
     initialData: mockImpactCases,
+    transform: (rows) => rows.map((item) => ({
+      ...item,
+      event: item.event ?? item.event_name,
+      region: item.region ?? item.region_id?.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      recovery_cost_usd: item.recovery_cost_usd ?? item.recovery_cost,
+      prevention_cost_usd: item.prevention_cost_usd ?? item.prevention_cost,
+      impact_score_delta: item.impact_score_delta ?? Number(-(item.cost_multiplier / 10).toFixed(1)),
+    })),
   });
 
   const transactionsState = useApiResource({

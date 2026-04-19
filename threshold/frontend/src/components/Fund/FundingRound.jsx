@@ -19,7 +19,7 @@ export default function FundingRound({ round, onContribute }) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase tracking-[0.22em] text-grey-mid">{round.threat_type}</div>
-          <h3 className="mt-2 text-2xl font-semibold text-white">{round.region_name}</h3>
+          <h3 className="mt-2 text-2xl font-semibold text-white">{round.title || round.region_name}</h3>
         </div>
         <div className="rounded-full border border-orange/30 bg-orange/10 px-3 py-1 text-sm text-orange">
           {round.cost_multiplier}x return

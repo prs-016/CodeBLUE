@@ -24,7 +24,7 @@ class CounterfactualCaseDetail(CounterfactualCaseSummary):
     early_warning_date: Optional[str] = None
     threshold_crossed_date: Optional[str] = None
     data_source: Optional[str] = None
-    timeline: list[CounterfactualTimelinePoint]
+    timeline: list[CounterfactualTimelinePoint] = []
 
 
 class CounterfactualEstimate(BaseModel):

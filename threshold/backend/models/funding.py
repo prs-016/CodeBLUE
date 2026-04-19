@@ -13,6 +13,7 @@ class FundingGapItem(BaseModel):
     population_affected: int
     attention_gap: float
     coverage_ratio: float
+    primary_driver: str = ""
 
 
 class FundingRoundSummary(BaseModel):

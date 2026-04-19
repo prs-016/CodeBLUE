@@ -23,7 +23,7 @@ export default function FundDashboard({
   const txList = transactions ?? state.transactions;
   const ledger = transparency ?? state.transparency;
   const [selectedRound, setSelectedRound] = useState(null);
-  const activeRounds = useMemo(() => roundList.filter((round) => round.status === "Open"), [roundList]);
+  const activeRounds = useMemo(() => roundList.filter((round) => round.status === "Open" || round.status === "active"), [roundList]);
 
   return (
     <div className="space-y-6">

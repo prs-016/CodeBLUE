@@ -120,8 +120,8 @@ def get_stress_signals(region_id: str, db: Session = Depends(get_db)) -> list[St
                    scientific_event_flag, active_situation_reports
             FROM region_features
             WHERE region_id = :region_id
-            ORDER BY date DESC
-            LIMIT 365
+            ORDER BY date ASC
+            LIMIT 2000
             """
         ),
         {"region_id": region_id},
