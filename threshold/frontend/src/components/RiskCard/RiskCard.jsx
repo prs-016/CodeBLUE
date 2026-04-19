@@ -52,10 +52,10 @@ export default function RiskCard({ quick, enrich, loadingQuick, loadingEnrich, o
 
       {/* Weather stats */}
       <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
-        <Stat label="Rainfall 48h" value={`${weather.rainfall_mm_last_48h} mm`} />
-        <Stat label="Soil Moisture" value={`${(weather.soil_moisture_pct * 100).toFixed(0)}%`} />
-        <Stat label="Wind Gust" value={`${(weather.wind_speed_gust_ms * 3.6).toFixed(0)} km/h`} />
-        <Stat label="Temperature" value={`${weather.temperature_c}°C`} />
+        <Stat label="Rainfall 48h" value={weather.rainfall_mm_last_48h > 0 ? `${weather.rainfall_mm_last_48h} mm` : "—"} />
+        <Stat label="Soil Moisture" value={weather.soil_moisture_pct > 0 ? `${(weather.soil_moisture_pct * 100).toFixed(0)}%` : "—"} />
+        <Stat label="Wind Gust" value={weather.wind_speed_gust_ms > 0 ? `${(weather.wind_speed_gust_ms * 3.6).toFixed(0)} km/h` : "—"} />
+        <Stat label="Temperature" value={weather.temperature_c !== 0 ? `${weather.temperature_c}°C` : "—"} />
       </div>
 
       {/* Trigger factors */}
