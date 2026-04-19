@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
+import * as THREE from "three";
 import { useNavigate } from "react-router-dom";
 import RiskCard from "../RiskCard/RiskCard";
 import { useRiskAssessment } from "../../hooks/useRiskAssessment";
 
-export default function WarRoomGlobe({ regions, theme = "night" }) {
+export default function WarRoomGlobe({ regions }) {
   const globeRef = useRef();
   const containerRef = useRef();
   const navigate = useNavigate();
@@ -15,26 +16,13 @@ export default function WarRoomGlobe({ regions, theme = "night" }) {
     import("globe.gl").then((GlobePkg) => {
       const Globe = GlobePkg.default || GlobePkg;
 
-      const applyTheme = (g, t) => {
-        if (t === "day") {
-          g.globeImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg")
-           .backgroundImageUrl(null)
-           .atmosphereColor("#87CEEB")
-           .atmosphereAltitude(0.15)
-           .hexPolygonColor(() => "rgba(0,0,0,0.1)");
-        } else {
-          g.globeImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-dark.jpg")
-           .backgroundImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/night-sky.png")
-           .atmosphereColor("#0A84FF")
-           .atmosphereAltitude(0.25)
-           .hexPolygonColor(() => "rgba(255,255,255,0.02)");
-        }
-      };
-
       const globe = Globe()(containerRef.current)
         .bumpImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-topology.png")
-        .backgroundColor("rgba(10,22,40,0)") // transparent to blead into the UI
+        .backgroundImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/night-sky.png")
+        .backgroundColor("rgba(10,22,40,0)") 
         .showAtmosphere(true)
+        .atmosphereColor("#0A84FF")
+        .atmosphereAltitude(0.20)
         .hexPolygonResolution(3)
         .hexPolygonMargin(0.6)
         .arcDashLength(0.4)
@@ -43,6 +31,44 @@ export default function WarRoomGlobe({ regions, theme = "night" }) {
         .arcDashAnimateTime(2000)
         .arcColor('color')
         .arcStroke('stroke');
+
+      // Add the native custom Day/Night Shader Material
+      const material = new THREE.ShaderMaterial({
+        uniforms: {
+          dayTexture: { value: new THREE.TextureLoader().load('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg') },
+          nightTexture: { value: new THREE.TextureLoader().load('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-night.jpg') },
+          sunDirection: { value: new THREE.Vector3(1, 0, 0) } // Fixed sun shining from the right
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          varying vec3 vNormal;
+          void main() {
+            vUv = uv;
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform sampler2D dayTexture;
+          uniform sampler2D nightTexture;
+          uniform vec3 sunDirection;
+
+          varying vec2 vUv;
+          varying vec3 vNormal;
+
+          void main() {
+            float intensity = dot(normalize(vNormal), normalize(sunDirection));
+            float mixValue = smoothstep(-0.2, 0.2, intensity);
+            
+            vec3 dayColor = texture2D(dayTexture, vUv).rgb;
+            vec3 nightColor = texture2D(nightTexture, vUv).rgb;
+            
+            gl_FragColor = vec4(mix(nightColor, dayColor, mixValue), 1.0);
+          }
+        `
+      });
+
+      globe.globeMaterial(material);
 
       // Add cyber-military hex grid overlay for countries
       fetch('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/dataset/ne_110m_admin_0_countries.geojson')
@@ -62,9 +88,6 @@ export default function WarRoomGlobe({ regions, theme = "night" }) {
         assess(lat, lng);
       });
 
-      // Apply initial theme dynamically to fix the empty stars/texture bug
-      applyTheme(globe, theme);
-
       globeRef.current = globe;
     }).catch(console.error);
 
@@ -73,24 +96,7 @@ export default function WarRoomGlobe({ regions, theme = "night" }) {
     };
   }, []);
 
-  // Theme switcher
-  useEffect(() => {
-    if (!globeRef.current) return;
-    const g = globeRef.current;
-    if (theme === "day") {
-      g.globeImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg")
-       .backgroundImageUrl(null) 
-       .atmosphereColor("#87CEEB")
-       .atmosphereAltitude(0.15)
-       .hexPolygonColor(() => "rgba(0,0,0,0.1)");
-    } else {
-      g.globeImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-dark.jpg")
-       .backgroundImageUrl("https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/night-sky.png")
-       .atmosphereColor("#0A84FF")
-       .atmosphereAltitude(0.25)
-       .hexPolygonColor(() => "rgba(255,255,255,0.02)");
-    }
-  }, [theme]);
+
 
   // Separate effect so assess reference doesn't recreate the globe
   useEffect(() => {
