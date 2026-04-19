@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import * as THREE from "three";
 import { useNavigate } from "react-router-dom";
 import RiskCard from "../RiskCard/RiskCard";
 import { useRiskAssessment } from "../../hooks/useRiskAssessment";
+import { useTsunamis } from "../../hooks";
 
 export default function WarRoomGlobe({ regions }) {
   const globeRef = useRef();
@@ -10,6 +11,35 @@ export default function WarRoomGlobe({ regions }) {
   const navigate = useNavigate();
   const [hoverD, setHoverD] = useState(null);
   const { quick, enrich, loadingQuick, loadingEnrich, assess, clear } = useRiskAssessment();
+  const { tsunamis } = useTsunamis();
+  const [currentYear, setCurrentYear] = useState(null);
+
+  // Initialize currentYear
+  useEffect(() => {
+    if (tsunamis?.length > 0 && currentYear === null) {
+      const validYears = tsunamis.map(t => t.year).filter(y => y != null);
+      if (validYears.length > 0) {
+        // Find minimal year or max year to start? Start at min
+        setCurrentYear(Math.min(...validYears));
+      }
+    }
+  }, [tsunamis, currentYear]);
+
+  // Animate over time
+  useEffect(() => {
+    if (currentYear === null || !tsunamis?.length) return;
+    const interval = setInterval(() => {
+      setCurrentYear(prev => {
+        const next = prev + 1;
+        const maxYear = new Date().getFullYear();
+        if (next > maxYear) {
+          return Math.min(...tsunamis.map(t => t.year).filter(y => y != null));
+        }
+        return next;
+      });
+    }, 150); // Fast enough to be interesting
+    return () => clearInterval(interval);
+  }, [currentYear, tsunamis]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -71,7 +101,7 @@ export default function WarRoomGlobe({ regions }) {
       globe.globeMaterial(material);
 
       // Add cyber-military hex grid overlay for countries
-      fetch('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/dataset/ne_110m_admin_0_countries.geojson')
+      fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
         .then(res => res.json())
         .then(countries => {
           globe.hexPolygonsData(countries.features)
@@ -107,12 +137,11 @@ export default function WarRoomGlobe({ regions }) {
     });
   }, [assess]);
 
-  useEffect(() => {
-    if (!globeRef.current || !regions || regions.length === 0) return;
-    const globe = globeRef.current;
 
-    // Rings indicating active stress zones
-    const ringData = regions.map((r) => ({
+
+  const regionRings = useMemo(() => {
+    const validRegions = regions || [];
+    return validRegions.map((r) => ({
       lat: r.lat,
       lng: r.lon,
       maxR: Math.max(8, (r.threshold_proximity_score || 0) * 2.2),
@@ -122,9 +151,38 @@ export default function WarRoomGlobe({ regions }) {
       label: r.name,
       ...r,
     }));
+  }, [regions]);
+
+  const allTsunamiRings = useMemo(() => {
+    return (tsunamis || [])
+      .filter(t => t.year != null)
+      .map(t => ({
+        ...t,
+        lat: t.lat,
+        lng: t.lng,
+        maxR: Math.max(4, (t.magnitude || 5) * 1.8),
+        propagationSpeed: 5,
+        repeatPeriod: 250,
+        color: () => 'rgba(0, 200, 255, 0.9)', // Vibrant blue for tsunamis
+        label: t.location || 'Tsunami Event',
+        isTsunami: true,
+      }));
+  }, [tsunamis]);
+
+  useEffect(() => {
+    if (!globeRef.current) return;
+    const globe = globeRef.current;
+
+    const validRegions = regions || [];
+
+    const activeTsunamis = currentYear !== null
+      ? allTsunamiRings.filter(t => Math.abs(t.year - currentYear) <= 2)
+      : [];
+
+    const allRingData = [...regionRings, ...activeTsunamis];
 
     // Draw arcs cascading from the most critical region to all others
-    const sorted = [...regions].sort((a,b) => (b.threshold_proximity_score||0) - (a.threshold_proximity_score||0));
+    const sorted = [...validRegions].sort((a,b) => (b.threshold_proximity_score||0) - (a.threshold_proximity_score||0));
     const critical = sorted[0];
     let arcData = [];
     if (critical && regions.length > 1) {
@@ -139,16 +197,14 @@ export default function WarRoomGlobe({ regions }) {
     }
 
     globe
-      .ringsData(ringData)
+      .ringsData(allRingData)
       .ringColor((d) => d.color)
       .ringMaxRadius((d) => d.maxR)
       .ringPropagationSpeed((d) => d.propagationSpeed)
       .ringRepeatPeriod((d) => d.repeatPeriod)
-      .onRingHover(setHoverD)
-      .onRingClick((d) => navigate(`/region/${d.id}`))
       .arcsData(arcData);
       
-  }, [regions, navigate]);
+  }, [regions, tsunamis, currentYear, navigate]);
 
   function getColor(score, threat = "thermal") {
     // Increased vibrance for colorful mode requirement
@@ -170,7 +226,7 @@ export default function WarRoomGlobe({ regions }) {
       />
 
       {/* Futuristic Hover Tooltip */}
-      {hoverD && (
+      {hoverD && !hoverD.isTsunami && (
         <div
           className="absolute pointer-events-none z-50 p-5 rounded-2xl transition-all duration-300 ease-out"
           style={{
@@ -198,14 +254,14 @@ export default function WarRoomGlobe({ regions }) {
                   className="text-3xl font-mono"
                   style={{ color: getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0) }}
                 >
-                  {hoverD.threshold_proximity_score.toFixed(1)}
+                  {(hoverD.threshold_proximity_score || 0).toFixed(1)}
                 </div>
              </div>
              
              <div className="bg-black/30 rounded-lg p-3 border border-white/5">
                 <div className="text-xs text-grey-mid uppercase tracking-widest mb-1">Threshold</div>
                 <div className="text-3xl font-mono text-white">
-                  T-{hoverD.days_to_threshold}
+                  T-{hoverD.days_to_threshold || 0}
                 </div>
              </div>
           </div>
@@ -215,12 +271,70 @@ export default function WarRoomGlobe({ regions }) {
           </div>
           <div className="mt-3 text-sm flex justify-between items-center text-grey-mid">
              <span>Estimated Gap:</span>
-             <span className="text-white font-mono">${(hoverD.funding_gap / 1000000).toFixed(1)}M</span>
+             <span className="text-white font-mono">${((hoverD.funding_gap || 0) / 1000000).toFixed(1)}M</span>
           </div>
           
           <div className="mt-5 w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg py-2 text-center font-bold uppercase tracking-widest transition-colors cursor-pointer" style={{ color: getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0) }}>
             Analyze Deep Threat Profile →
           </div>
+        </div>
+      )}
+
+      {/* Hover for Tsunamis */}
+      {hoverD && hoverD.isTsunami && (
+        <div
+          className="absolute pointer-events-none z-50 p-5 rounded-2xl transition-all duration-300 ease-out"
+          style={{
+            left: "50%",
+            top: "50%",
+            transform: "translate(60px, -50%)",
+            background: "linear-gradient(145deg, rgba(8, 22, 43, 0.95) 0%, rgba(2, 10, 20, 0.98) 100%)",
+            border: "1px solid rgba(0, 200, 255, 0.6)",
+            boxShadow: "0 20px 60px -10px rgba(0, 200, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <div className="flex items-center gap-3 mb-2">
+             <div 
+                className="w-3 h-3 rounded-full animate-pulse bg-cyan-400"
+             />
+             <h3 className="text-xl font-bold text-white tracking-wide uppercase">{hoverD.label}</h3>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 mt-4">
+             <div className="bg-black/30 rounded-lg p-3 border border-white/5">
+                <div className="text-xs text-grey-mid uppercase tracking-widest mb-1">Magnitude</div>
+                <div className="text-3xl font-mono text-cyan-400">
+                  {(hoverD.magnitude || 0).toFixed(1)}
+                </div>
+             </div>
+             
+             <div className="bg-black/30 rounded-lg p-3 border border-white/5">
+                <div className="text-xs text-grey-mid uppercase tracking-widest mb-1">Year</div>
+                <div className="text-3xl font-mono text-white">
+                  {hoverD.year}
+                </div>
+             </div>
+          </div>
+          
+          {(hoverD.max_water_height != null || hoverD.deaths != null) && (
+            <div className="mt-4 text-sm text-grey-light/90 border-l-2 pl-3 border-cyan-500">
+               {hoverD.max_water_height != null && <div>Max Water Height: {hoverD.max_water_height}m</div>}
+               {hoverD.deaths != null && <div>Recorded Deaths: {hoverD.deaths}</div>}
+               {hoverD.cause != null && <div className="mt-1 opacity-70">Cause: {hoverD.cause}</div>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {currentYear !== null && (
+        <div className="absolute bottom-8 right-10 z-0 pointer-events-none">
+           <div className="text-[120px] font-black text-white mix-blend-overlay opacity-20 tracking-tighter" style={{ textShadow: '0 0 40px rgba(255,255,255,0.4)', WebkitTextStroke: '1px rgba(255,255,255,0.1)' }}>
+               {currentYear}
+           </div>
+           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xl font-bold text-cyan-300 opacity-60 tracking-widest uppercase">
+               Tsunami Timeline
+           </div>
         </div>
       )}
 

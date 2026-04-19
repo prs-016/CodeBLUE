@@ -34,7 +34,6 @@ try:
 
     from tipping_point_classifier import TippingPointClassifier as _TippingPointClassifier
     from days_to_threshold_forecaster import DaysToThresholdForecaster as _DaysToThresholdForecaster
-    from counterfactual_cost_estimator import CounterfactualCostEstimator as _CounterfactualCostEstimator
 
     _ML_AVAILABLE = True
     logger.info("ML models imported successfully from %s", _ml_models_dir)
@@ -47,7 +46,6 @@ class DemoModelRegistry:
         self.loaded = False
         self._classifier = None
         self._forecaster = None
-        self._estimator = None
 
     def load(self) -> None:
         if _ML_AVAILABLE:
@@ -66,13 +64,11 @@ class DemoModelRegistry:
                     logger.info("TippingPointClassifier using heuristic defaults (no saved weights)")
 
                 self._forecaster = _DaysToThresholdForecaster()
-                self._estimator = _CounterfactualCostEstimator()
                 logger.info("ML model instances ready.")
             except Exception as exc:
                 logger.warning("Failed to instantiate ML models: %s", exc)
                 self._classifier = None
                 self._forecaster = None
-                self._estimator = None
         self.loaded = True
 
     # ------------------------------------------------------------------
@@ -184,73 +180,6 @@ class DemoModelRegistry:
             "confidence_interval_high": days_to_threshold + 34,
             "primary_driver": mapping["primary_driver"],
             "trajectory": trajectory,
-        }
-
-    # ------------------------------------------------------------------
-    # counterfactual_estimate
-    # ------------------------------------------------------------------
-
-    def counterfactual_estimate(self, db: Session, region_id: str) -> dict:
-        row = db.execute(
-            text(
-                """
-                SELECT name, current_score, primary_threat
-                FROM regions
-                WHERE id = :region_id
-                """
-            ),
-            {"region_id": region_id},
-        ).fetchone()
-        if row is None:
-            raise LookupError(region_id)
-
-        mapping = row._mapping
-        region_name = mapping["name"]
-        current_score = float(mapping["current_score"])
-
-        # Attempt ML path -----------------------------------------------
-        if self._estimator is not None:
-            try:
-                result = self._estimator.estimate(region_id, severity_score=current_score)
-                return {
-                    "region_id": region_id,
-                    "region_name": region_name,
-                    "prevention_cost_usd": result["prevention_cost_usd"],
-                    "recovery_cost_usd": result["recovery_cost_usd"],
-                    "cost_multiplier": result["cost_multiplier"],
-                    "optimal_intervention_type": result["optimal_intervention_type"],
-                    "prevention_breakdown": result["prevention_breakdown"],
-                    "recovery_breakdown": result["recovery_breakdown"],
-                }
-            except Exception as exc:
-                logger.warning("CounterfactualCostEstimator failed for %s: %s", region_id, exc)
-
-        # Simple-math fallback ------------------------------------------
-        return self._simple_counterfactual(region_id, region_name, current_score, mapping["primary_threat"])
-
-    def _simple_counterfactual(
-        self, region_id: str, region_name: str, score: float, primary_threat: str
-    ) -> dict:
-        prevention_cost = round(4_000_000 + score * 2_500_000, 2)
-        recovery_cost = round(prevention_cost * (4 + score / 2), 2)
-        return {
-            "region_id": region_id,
-            "region_name": region_name,
-            "prevention_cost_usd": prevention_cost,
-            "recovery_cost_usd": recovery_cost,
-            "cost_multiplier": round(recovery_cost / prevention_cost, 2),
-            "optimal_intervention_type": f"{primary_threat} resilience package",
-            "prevention_breakdown": {
-                "monitoring": round(prevention_cost * 0.18, 2),
-                "local_response": round(prevention_cost * 0.47, 2),
-                "ecosystem_restoration": round(prevention_cost * 0.35, 2),
-            },
-            "recovery_breakdown": {
-                "ag_loss": round(recovery_cost * 0.18, 2),
-                "infra_loss": round(recovery_cost * 0.31, 2),
-                "fishery_loss": round(recovery_cost * 0.24, 2),
-                "tourism_loss": round(recovery_cost * 0.27, 2),
-            },
         }
 
     # ------------------------------------------------------------------

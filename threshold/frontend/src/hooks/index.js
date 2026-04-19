@@ -3,4 +3,5 @@ export { default as useFundingRounds } from "./useFundingRounds";
 export { default as useNews } from "./useNews";
 export { default as useRegionBrief } from "./useRegionBrief";
 export { default as useTriageQueue } from "./useTriageQueue";
+export { default as useTsunamis } from "./useTsunamis";
 export { useRegion, useRegions, useRegionTrajectory } from "./useRegions";
