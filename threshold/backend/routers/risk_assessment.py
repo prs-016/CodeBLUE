@@ -16,8 +16,6 @@ from models.risk_assessment import (
 from services.disaster_inference import infer_disaster
 from services.gdelt_service import get_headlines
 from services.geocoding_service import reverse_geocode
-from services.nyne_service import search_relief_orgs
-from services.openmart_service import search_nonprofits
 from services.precip_service import get_weather
 
 
@@ -73,14 +71,15 @@ async def risk_enrich(req: RiskAssessmentRequest) -> EnrichRiskResponse:
     disaster_type = disaster_raw["disaster_type"]
     region_name = geo["region_name"]
 
+    from services.gemini_service import search_charities
+    
     # Fire news + charities in parallel
     results = await asyncio.gather(
         get_headlines(region_name, disaster_type),
-        search_nonprofits(region_name, disaster_type),
-        search_relief_orgs(region_name, disaster_type),
+        search_charities(region_name, disaster_type),
         return_exceptions=True,
     )
-    headlines_raw, openmart_raw, nyne_raw = results
+    headlines_raw, gemini_raw = results
 
     errors: dict[str, str | None] = {"news": None, "charities": None}
 
@@ -91,18 +90,10 @@ async def risk_enrich(req: RiskAssessmentRequest) -> EnrichRiskResponse:
         headlines = [Headline(**h) for h in (headlines_raw or [])]
 
     charities: list[CharityResult] = []
-    if isinstance(openmart_raw, Exception):
-        errors["charities"] = str(openmart_raw)
+    if isinstance(gemini_raw, Exception):
+        errors["charities"] = str(gemini_raw)
     else:
-        charities += [CharityResult(**c) for c in (openmart_raw or [])]
-
-    if isinstance(nyne_raw, Exception):
-        if errors["charities"]:
-            errors["charities"] += f" | nyne: {nyne_raw}"
-        else:
-            errors["charities"] = str(nyne_raw)
-    else:
-        charities += [CharityResult(**c) for c in (nyne_raw or [])]
+        charities = [CharityResult(**c) for c in (gemini_raw or [])]
 
     # Deduplicate charities by name
     seen: set[str] = set()
