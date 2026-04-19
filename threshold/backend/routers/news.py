@@ -47,13 +47,19 @@ def get_news(
     source: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ) -> list[dict]:
-    query = """
+    is_snowflake = db.bind.dialect.name == "snowflake"
+    date_filter = (
+        f"DATEADD(day, -{days_back}, CURRENT_DATE())"
+        if is_snowflake
+        else f"date('now', '-{days_back} day')"
+    )
+    query = f"""
         SELECT id, title, source_type, source_org, date, body_summary, url, urgency_score, disaster_type
         FROM news_reports
         WHERE region_id = :region_id
-          AND date >= date('now', :days_back)
+          AND date >= {date_filter}
     """
-    params: dict[str, object] = {"region_id": region_id, "days_back": f"-{days_back} day"}
+    params: dict[str, object] = {"region_id": region_id}
     if source and source.lower() != "all":
         query += " AND source_type = :source"
         params["source"] = source.lower()

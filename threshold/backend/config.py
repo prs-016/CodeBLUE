@@ -48,5 +48,6 @@ class Settings(BaseSettings):
     snowflake_password: str = ""
     snowflake_database: str = "THRESHOLD_DB"
     snowflake_schema: str = "PUBLIC"
+    snowflake_warehouse: str = "COMPUTE_WH"
 
 settings = Settings()

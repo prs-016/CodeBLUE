@@ -34,11 +34,17 @@ def get_triage_queue(
     order_column = safe_columns.get(sort_by, "days_to_threshold")
     order_direction = "ASC" if order.lower() == "asc" else "DESC"
 
-    query = """
+    is_snowflake = db.bind.dialect.name == "snowflake"
+    impact_expr = (
+        "ROUND(funding_gap / CAST(GREATEST(population_affected, 1) AS FLOAT), 4)"
+        if is_snowflake
+        else "ROUND(funding_gap / CAST(MAX(population_affected, 1) AS REAL), 4)"
+    )
+    query = f"""
         SELECT
             id, name, current_score, days_to_threshold, funding_gap,
             primary_threat AS threat_type, population_affected, primary_driver,
-            ROUND(funding_gap / CAST(MAX(population_affected, 1) AS REAL), 4) AS impact_value
+            {impact_expr} AS impact_value
         FROM regions
         WHERE 1=1
     """

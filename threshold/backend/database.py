@@ -20,7 +20,8 @@ def _get_engine():
         try:
             print("Sponsor Integration Active: Establishing dynamic connection to Snowflake Warehouse...")
             safe_password = urllib.parse.quote_plus(settings.snowflake_password)
-            snowflake_url = f"snowflake://{settings.snowflake_user}:{safe_password}@{settings.snowflake_account}/{settings.snowflake_database}/{settings.snowflake_schema}"
+            warehouse = settings.snowflake_warehouse or "COMPUTE_WH"
+            snowflake_url = f"snowflake://{settings.snowflake_user}:{safe_password}@{settings.snowflake_account}/{settings.snowflake_database}/{settings.snowflake_schema}?warehouse={warehouse}"
             eng = create_engine(snowflake_url, future=True)
             with eng.connect() as test_conn:
                 pass
