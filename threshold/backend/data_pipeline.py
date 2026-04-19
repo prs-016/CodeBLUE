@@ -414,11 +414,14 @@ def build_region_features(sst: pd.DataFrame, co2: pd.DataFrame, crw: pd.DataFram
         df["active_situation_reports"] = (df["alert_level"] >= 2).astype(int) * 2
 
         df["sst_anomaly"] = sst_anom.round(3)
+        df["dhw_current"] = df["dhw"].round(3)
+        df["bleaching_alert_level"] = df["alert_level"].astype(float)
 
         frames.append(df[[
             "region_id", "date", "sst_anomaly", "o2_current",
             "chlorophyll_anomaly", "co2_regional_ppm", "nitrate_anomaly",
             "threshold_proximity_score", "scientific_event_flag", "active_situation_reports",
+            "dhw_current", "bleaching_alert_level",
         ]])
 
     return pd.concat(frames, ignore_index=True)

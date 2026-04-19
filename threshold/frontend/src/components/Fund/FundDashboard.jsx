@@ -22,6 +22,7 @@ export default function FundDashboard({
   const impactList = impact ?? state.impact;
   const txList = transactions ?? state.transactions;
   const ledger = transparency ?? state.transparency;
+  const charities = state.charities;
   const [selectedRound, setSelectedRound] = useState(null);
   const activeRounds = useMemo(() => roundList.filter((round) => round.status === "Open" || round.status === "active"), [roundList]);
 
@@ -64,7 +65,7 @@ export default function FundDashboard({
         ))}
       </section>
 
-      <ImpactRegistry impact={impactList} transactions={txList} />
+      <ImpactRegistry impact={impactList} transactions={txList} charities={charities} />
 
       <DonationModal round={selectedRound} open={Boolean(selectedRound)} onClose={() => setSelectedRound(null)} />
     </div>

@@ -235,6 +235,8 @@ def init_db() -> None:
         _ensure_column(conn, "funding_rounds", "partner_ein", "TEXT")
         _ensure_column(conn, "region_features", "scientific_event_flag", "INTEGER NOT NULL DEFAULT 0")
         _ensure_column(conn, "region_features", "active_situation_reports", "INTEGER NOT NULL DEFAULT 0")
+        _ensure_column(conn, "region_features", "dhw_current", "REAL NOT NULL DEFAULT 0")
+        _ensure_column(conn, "region_features", "bleaching_alert_level", "REAL NOT NULL DEFAULT 0")
         _ensure_column(conn, "counterfactual_cases", "early_warning_date", "TEXT")
         _ensure_column(conn, "counterfactual_cases", "threshold_crossed_date", "TEXT")
         _ensure_column(conn, "counterfactual_cases", "data_source", "TEXT")

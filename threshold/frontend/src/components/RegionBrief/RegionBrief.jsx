@@ -24,7 +24,7 @@ export default function RegionBrief({
   const regionNews = news ?? brief.news;
   const regionEstimate = estimate ?? brief.estimate;
   const scoreBreakdown = breakdown ?? brief.scoreBreakdown;
-  const partnerCharities = charities ?? [];
+  const partnerCharities = charities ?? brief.charities ?? [];
   const loading = loadingOverride ?? brief.loading;
   const score = Number(region?.current_score ?? region?.threshold_proximity_score ?? 0);
 

@@ -269,7 +269,8 @@ class DemoModelRegistry:
             text(
                 """
                 SELECT sst_anomaly, o2_current, chlorophyll_anomaly,
-                       nitrate_anomaly, threshold_proximity_score
+                       nitrate_anomaly, threshold_proximity_score,
+                       dhw_current, bleaching_alert_level
                 FROM region_features
                 WHERE region_id = :region_id
                 ORDER BY date DESC
@@ -287,6 +288,8 @@ class DemoModelRegistry:
         o2_current = float(r["o2_current"])
         chlorophyll_anomaly = float(r["chlorophyll_anomaly"])
         nitrate_anomaly = float(r["nitrate_anomaly"])
+        dhw_current = float(r["dhw_current"] or 0.0)
+        bleaching_alert_level = float(r["bleaching_alert_level"] or 0.0)
         hypoxia_risk = max(0.0, (5.0 - o2_current) / 3.0)
 
         features: Dict[str, float] = {
@@ -296,8 +299,8 @@ class DemoModelRegistry:
             "o2_trend_90d": 0.0,
             "hypoxia_risk": hypoxia_risk,
             "chlorophyll_anomaly": chlorophyll_anomaly,
-            "dhw_current": 0.0,
-            "bleaching_alert_level": 0.0,
+            "dhw_current": dhw_current,
+            "bleaching_alert_level": bleaching_alert_level,
             "co2_yoy_acceleration": 0.0,
             "nitrate_anomaly": nitrate_anomaly,
             "larvae_count_trend": 0.0,

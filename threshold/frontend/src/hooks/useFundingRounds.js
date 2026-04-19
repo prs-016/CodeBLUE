@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useApiResource } from "./useApiResource";
 
 export default function useFundingRounds() {
@@ -30,24 +29,22 @@ export default function useFundingRounds() {
     endpoint: "/api/v1/fund/transparency",
   });
 
-  const charityMap = useMemo(() => {
-    return (roundsState.data ?? []).reduce((accumulator, round) => {
-      accumulator[round.region_id] = [];
-      return accumulator;
-    }, {});
-  }, [roundsState.data]);
+  const charitiesState = useApiResource({
+    endpoint: "/api/v1/charities",
+  });
 
   return {
     rounds: roundsState.data ?? [],
     impact: impactState.data ?? [],
     transactions: transactionsState.data ?? [],
     transparency: transparencyState.data ?? { total_volume_usd: 0, total_transactions: 0, smart_contract_address: "" },
-    charitiesByRegion: charityMap,
+    charities: charitiesState.data ?? [],
     loading:
       roundsState.loading ||
       impactState.loading ||
       transactionsState.loading ||
-      transparencyState.loading,
+      transparencyState.loading ||
+      charitiesState.loading,
     source: [roundsState.source, impactState.source, transactionsState.source, transparencyState.source].includes(
       "live"
     )

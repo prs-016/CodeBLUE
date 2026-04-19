@@ -65,12 +65,19 @@ export default function useRegionBrief(regionId) {
     dependencies: [regionId],
   });
 
+  const charitiesState = useApiResource({
+    endpoint: regionId ? `/api/v1/charities?region_id=${regionId}` : null,
+    enabled: Boolean(regionId),
+    dependencies: [regionId],
+  });
+
   const loading =
     regionState.loading ||
     trajectoryState.loading ||
     signalsState.loading ||
     newsState.loading ||
-    estimateState.loading;
+    estimateState.loading ||
+    charitiesState.loading;
 
   return {
     region,
@@ -78,6 +85,7 @@ export default function useRegionBrief(regionId) {
     signals: signalsState.data ?? [],
     news: newsState.data ?? [],
     estimate: estimateState.data ?? null,
+    charities: charitiesState.data ?? [],
     scoreBreakdown: region ? summarizeDrivers(region) : [],
     loading,
     source: [
