@@ -9,7 +9,8 @@ class CharitySummary(BaseModel):
     name: str
     overall_score: float
     region_id: Optional[str] = None
-
+    focus: Optional[str] = None
+    url: Optional[str] = None
 
 class CharityDetail(CharitySummary):
     financial_score: Optional[float] = None
