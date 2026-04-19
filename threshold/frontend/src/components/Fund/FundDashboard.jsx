@@ -1,84 +1,72 @@
-import React, { useEffect, useState } from 'react';
-import { api } from '../../utils/api';
+import React, { useMemo, useState } from "react";
+import useFundingRounds from "../../hooks/useFundingRounds";
+import DonationModal from "./DonationModal";
+import FundingRound from "./FundingRound";
+import ImpactRegistry from "./ImpactRegistry";
 
-export default function FundDashboard() {
-  const [rounds, setRounds] = useState([]);
-  const [loading, setLoading] = useState(true);
+function formatMoney(value) {
+  if (value >= 1000000) {
+    return `$${(value / 1000000).toFixed(1)}M`;
+  }
+  return `$${value}`;
+}
 
-  useEffect(() => {
-    api.getFundingRounds().then(d => {
-      setRounds(d);
-      setLoading(false);
-    });
-  }, []);
-
-  if (loading) return <div className="animate-pulse p-4 text-teal">Synchronizing smart contract states...</div>;
-
-  const activeRounds = rounds.filter(r => r.status === 'Open');
+export default function FundDashboard({
+  rounds,
+  impact,
+  transactions,
+  transparency,
+}) {
+  const state = useFundingRounds();
+  const roundList = rounds ?? state.rounds;
+  const impactList = impact ?? state.impact;
+  const txList = transactions ?? state.transactions;
+  const ledger = transparency ?? state.transparency;
+  const [selectedRound, setSelectedRound] = useState(null);
+  const activeRounds = useMemo(() => roundList.filter((round) => round.status === "Open"), [roundList]);
 
   return (
-    <div className="space-y-8">
-      {/* Hero Stats */}
-      <div className="grid grid-cols-3 gap-6">
-        <div className="bg-grey-dark/20 p-6 rounded-xl border border-grey-dark">
-          <div className="text-grey-mid uppercase text-xs tracking-widest font-bold mb-2">Total Deployed via THRESHOLD</div>
-          <div className="text-3xl font-mono text-white">$15.4M</div>
-        </div>
-        <div className="bg-grey-dark/20 p-6 rounded-xl border border-grey-dark">
-          <div className="text-grey-mid uppercase text-xs tracking-widest font-bold mb-2">Active Rounds Triggered</div>
-          <div className="text-3xl font-mono text-white">{activeRounds.length}</div>
-        </div>
-        <div className="bg-teal/10 p-6 rounded-xl border border-teal/30">
-          <div className="text-teal-light uppercase text-xs tracking-widest font-bold mb-2">Measured Impact (Avg Score Delta)</div>
-          <div className="text-3xl font-mono text-teal-light">↓ -2.4 points</div>
-        </div>
-      </div>
-
-      <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-alert to-orange ml-4 pt-4">
-        Active Emergency Funding Rounds
-      </h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {activeRounds.map(r => (
-          <div key={r.id} className="bg-navy border border-red-alert/40 rounded-xl overflow-hidden shadow-2xl relative flex flex-col">
-            <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-red-alert to-orange"></div>
-            <div className="p-6 flex-grow">
-              <div className="flex justify-between items-start mb-4">
-                 <div>
-                   <h3 className="font-bold text-lg">{r.region_name}</h3>
-                   <span className="text-xs text-red-alert border border-red-alert px-2 py-0.5 rounded uppercase tracking-widest">
-                     {r.threat_type} Warning
-                   </span>
-                 </div>
-                 <div className="bg-orange/20 text-orange font-mono font-bold text-sm px-2 py-1 rounded">
-                   1$ → {r.cost_multiplier}X
-                 </div>
-              </div>
-              
-              <div className="mb-4">
-                 <div className="flex justify-between text-xs font-mono text-grey-mid mb-1">
-                   <span>${(r.raised_amount / 1000).toFixed(0)}k raised</span>
-                   <span>${(r.target_amount / 1000).toFixed(0)}k target</span>
-                 </div>
-                 <div className="w-full bg-grey-dark rounded-full h-2 overflow-hidden">
-                   <div 
-                     className="bg-teal-light h-full" 
-                     style={{width: `${(r.raised_amount / r.target_amount)*100}%`}}
-                   />
-                 </div>
-              </div>
-              
-              <div className="text-sm font-mono text-orange mb-6">
-                Ends {r.deadline}
-              </div>
-            </div>
-            
-            <button className="w-full bg-teal hover:bg-teal-light text-navy font-bold uppercase tracking-widest transform transition-all py-4">
-               Contribute via Smart Contract
-            </button>
+    <div className="space-y-6">
+      <section className="rounded-[32px] border border-grey-dark/80 bg-[radial-gradient(circle_at_top_left,rgba(20,189,172,0.12),transparent_24%),linear-gradient(160deg,rgba(10,22,40,0.98),rgba(14,28,51,0.95))] p-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="text-xs uppercase tracking-[0.28em] text-grey-mid">THRESHOLD FUND</div>
+            <h2 className="mt-3 text-4xl font-semibold text-white">Deploy capital before collapse costs compound</h2>
+            <p className="mt-2 max-w-2xl text-sm text-grey-mid">
+              This dashboard keeps the funding round list, partner verification, and on-chain transparency in one integration-friendly component.
+            </p>
           </div>
+          <div className="rounded-[24px] border border-white/10 bg-black/20 px-5 py-4 text-right">
+            <div className="text-xs uppercase tracking-[0.2em] text-grey-mid">{state.source}</div>
+            <div className="mt-1 font-mono text-4xl text-white">{formatMoney(ledger.total_volume_usd || 0)}</div>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="rounded-[24px] border border-grey-dark/70 bg-black/20 p-4">
+            <div className="text-xs uppercase tracking-[0.2em] text-grey-mid">Active rounds</div>
+            <div className="mt-2 font-mono text-3xl text-white">{activeRounds.length}</div>
+          </div>
+          <div className="rounded-[24px] border border-grey-dark/70 bg-black/20 p-4">
+            <div className="text-xs uppercase tracking-[0.2em] text-grey-mid">Transactions</div>
+            <div className="mt-2 font-mono text-3xl text-white">{ledger.total_transactions || txList.length}</div>
+          </div>
+          <div className="rounded-[24px] border border-grey-dark/70 bg-black/20 p-4">
+            <div className="text-xs uppercase tracking-[0.2em] text-grey-mid">Contract</div>
+            <div className="mt-2 text-sm text-white">{ledger.smart_contract_address}</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+        {activeRounds.map((round) => (
+          <FundingRound key={round.id} round={round} onContribute={setSelectedRound} />
         ))}
-      </div>
+      </section>
+
+      <ImpactRegistry impact={impactList} transactions={txList} />
+
+      <DonationModal round={selectedRound} open={Boolean(selectedRound)} onClose={() => setSelectedRound(null)} />
     </div>
   );
 }

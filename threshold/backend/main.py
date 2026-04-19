@@ -1,38 +1,72 @@
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from config import settings
-from routers import regions, triage, funding, counterfactual, news, charities, fund
+from database import SessionLocal, get_last_data_refresh, init_db
+from models.region import HealthResponse
+from routers import charities, counterfactual, fund, funding, news, regions, triage
+from services.ml_service import model_registry
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    model_registry.load()
+    with SessionLocal() as db:
+        app.state.last_data_refresh = get_last_data_refresh(db)
+    app.state.models_loaded = model_registry.loaded
+    yield
+
 
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.VERSION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    title=settings.project_name,
+    version=settings.version,
+    openapi_url=f"{settings.api_v1_str}/openapi.json",
+    lifespan=lifespan,
 )
 
-# CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Application startup and teardown
-@app.on_event("startup")
-async def startup_event():
-    print("Initializing THRESHOLD backend models & cache...")
-    # Load ML models and establish DB connection to Snowflake here
 
-@app.get("/health")
-def health_check():
-    return {"status": "ok", "message": "THRESHOLD Systems Nominal"}
+@app.get("/health", response_model=HealthResponse, tags=["health"])
+def health_check() -> HealthResponse:
+    with SessionLocal() as db:
+        last_refresh = get_last_data_refresh(db)
+    return HealthResponse(
+        status="ok",
+        db_connected=True,
+        models_loaded=getattr(app.state, "models_loaded", False),
+        last_data_refresh=last_refresh,
+    )
 
-# Register routers
-app.include_router(regions.router, prefix=settings.API_V1_STR + "/regions", tags=["regions"])
-app.include_router(triage.router, prefix=settings.API_V1_STR + "/triage", tags=["triage"])
-app.include_router(funding.router, prefix=settings.API_V1_STR + "/funding", tags=["funding"])
-app.include_router(news.router, prefix=settings.API_V1_STR + "/news", tags=["news"])
-app.include_router(counterfactual.router, prefix=settings.API_V1_STR + "/counterfactual", tags=["counterfactual"])
-app.include_router(charities.router, prefix=settings.API_V1_STR + "/charities", tags=["charities"])
-app.include_router(fund.router, prefix=settings.API_V1_STR + "/fund", tags=["fund"])
+
+@app.get(f"{settings.api_v1_str}/health", response_model=HealthResponse, tags=["health"])
+def versioned_health_check() -> HealthResponse:
+    return health_check()
+
+
+app.include_router(regions.router, prefix=f"{settings.api_v1_str}/regions", tags=["regions"])
+app.include_router(triage.router, prefix=f"{settings.api_v1_str}/triage", tags=["triage"])
+app.include_router(funding.router, prefix=f"{settings.api_v1_str}/funding", tags=["funding"])
+app.include_router(news.router, prefix=f"{settings.api_v1_str}/news", tags=["news"])
+app.include_router(
+    counterfactual.router,
+    prefix=f"{settings.api_v1_str}/counterfactual",
+    tags=["counterfactual"],
+)
+app.include_router(
+    charities.router,
+    prefix=f"{settings.api_v1_str}/charities",
+    tags=["charities"],
+)
+app.include_router(fund.router, prefix=f"{settings.api_v1_str}/fund", tags=["fund"])

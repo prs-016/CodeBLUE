@@ -1,20 +1,44 @@
-import os
-from pydantic_settings import BaseSettings
+from __future__ import annotations
+
+from pathlib import Path
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+BACKEND_DIR = Path(__file__).resolve().parent
+REPO_ROOT = BACKEND_DIR.parent
+
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "THRESHOLD API"
-    VERSION: str = "1.0.0"
-    API_V1_STR: str = "/api/v1"
-    
-    # DB (Local SQLite Mocking Snowflake for Dev)
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///../threshold.db")
-    
-    # Snowflake Real Data
-    SNOWFLAKE_USER: str = os.getenv("SNOWFLAKE_USER", "")
-    SNOWFLAKE_PASSWORD: str = os.getenv("SNOWFLAKE_PASSWORD", "")
-    SNOWFLAKE_ACCOUNT: str = os.getenv("SNOWFLAKE_ACCOUNT", "")
-    
-    # Environment
-    USE_MOCK_SNOWFLAKE: bool = True  # True for Hackathon demo if real credentials fail
+    model_config = SettingsConfigDict(
+        env_file=str(REPO_ROOT / ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    project_name: str = "THRESHOLD API"
+    version: str = "1.0.0"
+    api_v1_str: str = "/api/v1"
+    cors_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]
+    )
+
+    database_url: str = f"sqlite:///{(BACKEND_DIR / 'threshold.db').as_posix()}"
+    demo_mode: bool = True
+
+    stripe_secret_key: str = ""
+    stripe_publishable_key: str = ""
+    stripe_webhook_secret: str = ""
+
+    solana_rpc_url: str = "https://api.devnet.solana.com"
+    solana_program_id: str = "threshold-demo-program"
+    solana_usdc_mint: str = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+
 
 settings = Settings()

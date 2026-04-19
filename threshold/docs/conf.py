@@ -1,7 +1,7 @@
 # Configuration file for the Sphinx documentation builder.
 
 project = 'THRESHOLD'
-copyright = '2025, Code Blue'
+copyright = '2026, Code Blue'
 author = 'Code Blue'
 
 extensions = [

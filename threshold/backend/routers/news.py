@@ -1,38 +1,64 @@
+from __future__ import annotations
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
 from sqlalchemy import text
-from typing import List, Dict, Any, Optional
+from sqlalchemy.orm import Session
+
 from database import get_db
+
 
 router = APIRouter()
 
-@router.get("/{region_id}", response_model=List[Dict[str, Any]])
+
+@router.get(
+    "/attention-gap",
+    response_model=list[dict],
+    summary="Get attention gap rankings",
+)
+def get_attention_gap(db: Session = Depends(get_db)) -> list[dict]:
+    rows = db.execute(
+        text(
+            """
+            SELECT
+                r.id AS region_id,
+                r.name,
+                ma.severity_score,
+                ma.normalized_attention_score,
+                ma.attention_gap
+            FROM media_attention ma
+            JOIN regions r ON r.id = ma.region_id
+            ORDER BY ma.attention_gap DESC
+            """
+        )
+    ).fetchall()
+    return [dict(row._mapping) for row in rows]
+
+
+@router.get(
+    "/{region_id}",
+    response_model=list[dict],
+    summary="Get region news feed",
+)
 def get_news(
     region_id: str,
-    limit: int = 10,
-    days_back: int = 30,
-    source: Optional[str] = None,
-    db: Session = Depends(get_db)
-):
-    """Returns recent news items with urgency scores, sorted by relevance."""
-    query = "SELECT * FROM news_reports WHERE region_id = :rid"
-    params = {"rid": region_id}
-    
+    limit: int = Query(default=10, ge=1, le=50),
+    days_back: int = Query(default=30, ge=1, le=365),
+    source: Optional[str] = Query(default=None),
+    db: Session = Depends(get_db),
+) -> list[dict]:
+    query = """
+        SELECT id, title, source_type, source_org, date, body_summary, url, urgency_score, disaster_type
+        FROM news_reports
+        WHERE region_id = :region_id
+          AND date >= date('now', :days_back)
+    """
+    params: dict[str, object] = {"region_id": region_id, "days_back": f"-{days_back} day"}
     if source and source.lower() != "all":
-        query += " AND source_org = :src"
-        params["src"] = source
-        
+        query += " AND source_type = :source"
+        params["source"] = source.lower()
     query += " ORDER BY urgency_score DESC, date DESC LIMIT :limit"
     params["limit"] = limit
-    
-    result = db.execute(text(query), params)
-    return [dict(row._mapping) for row in result]
 
-@router.get("/attention-gap/rankings", response_model=List[Dict[str, Any]])
-def get_attention_gap(db: Session = Depends(get_db)):
-    """Returns all regions with media attention vs crisis severity comparison."""
-    result = db.execute(text("""
-        SELECT id as region_id, name, current_score as severity_score, alert_level as attention_status
-        FROM regions
-    """))
-    return [dict(row._mapping) for row in result]
+    rows = db.execute(text(query), params).fetchall()
+    return [dict(row._mapping) for row in rows]

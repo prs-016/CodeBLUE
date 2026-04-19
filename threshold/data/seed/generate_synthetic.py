@@ -10,84 +10,108 @@ DATABASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 
 DEMO_REGIONS_CONFIG = {
     "great_barrier_reef": {
-        "name": "Great Barrier Reef",
+        "name": "Great Barrier Reef", "lat": -18.2, "lon": 147.7, "population_affected": 240000,
         "current_score": 8.4,
         "days_to_threshold": 47,
-        "funding_gap": 8400000,
+        "funding_gap_usd": 8400000,
+        "committed_funding_usd": 1600000,
         "primary_threat": "thermal",
+        "sst_anomaly_current": 2.3,
+        "dhw_current": 9.1,
+        "bleaching_alert_level": 4,
+        "primary_driver": "SST Anomaly +2.3°C above 30yr baseline",
         "drama_level": "CRITICAL",
-        "lat": -18.2, "lon": 147.7,
-        "population_affected": 240000
+        "ocha_coverage_ratio": 0.16,
     },
     "mekong_delta": {
-        "name": "Mekong Delta",
+        "name": "Mekong Delta", "lat": 10.0, "lon": 105.5, "population_affected": 17000000,
         "current_score": 7.1,
         "days_to_threshold": 180,
-        "funding_gap": 9600000,
+        "funding_gap_usd": 9600000,
+        "committed_funding_usd": 2400000,
         "primary_threat": "hypoxia",
+        "o2_current_ml_l": 2.8,
+        "hypoxia_risk": 0.72,
+        "primary_driver": "Dissolved O2 at 2.8ml/L (threshold: 2.0)",
         "drama_level": "HIGH",
-        "lat": 10.0, "lon": 105.5,
-        "population_affected": 17000000
+        "ocha_coverage_ratio": 0.20,
     },
     "arabian_sea": {
-        "name": "Arabian Sea",
+        "name": "Arabian Sea", "lat": 15.0, "lon": 65.0, "population_affected": 8500000,
         "current_score": 6.8,
         "days_to_threshold": 290,
-        "funding_gap": 12000000,
+        "funding_gap_usd": 12000000,
+        "committed_funding_usd": 1200000,
         "primary_threat": "hypoxia",
+        "o2_current_ml_l": 3.1,
+        "hypoxia_risk": 0.65,
+        "primary_driver": "Expanding dead zone — O2 3.1ml/L declining at -0.08/yr",
         "drama_level": "HIGH",
-        "lat": 15.0, "lon": 65.0,
-        "population_affected": 8500000
+        "ocha_coverage_ratio": 0.09,
     },
     "california_current": {
-        "name": "California Current",
+        "name": "California Current", "lat": 36.0, "lon": -122.0, "population_affected": 4200000,
         "current_score": 5.2,
         "days_to_threshold": 520,
-        "funding_gap": 3200000,
+        "funding_gap_usd": 3200000,
+        "committed_funding_usd": 2100000,
         "primary_threat": "acidification",
+        "co2_yoy_acceleration": 0.034,
+        "primary_driver": "CO2 acceleration +3.4% YoY above trend",
         "drama_level": "MEDIUM",
-        "lat": 36.0, "lon": -122.0,
-        "population_affected": 4200000
-    },
-    "baltic_sea": {
-        "name": "Baltic Sea",
-        "current_score": 4.5,
-        "days_to_threshold": 800,
-        "funding_gap": 1500000,
-        "primary_threat": "nutrient",
-        "drama_level": "MEDIUM",
-        "lat": 57.0, "lon": 19.0,
-        "population_affected": 1400000
-    },
-    "coral_triangle": {
-        "name": "Coral Triangle",
-        "current_score": 8.1,
-        "days_to_threshold": 65,
-        "funding_gap": 15000000,
-        "primary_threat": "thermal",
-        "drama_level": "CRITICAL",
-        "lat": 0.0, "lon": 120.0,
-        "population_affected": 120000000
-    },
-    "bengal_bay": {
-        "name": "Bay of Bengal",
-        "current_score": 3.8,
-        "days_to_threshold": 1200,
-        "funding_gap": 0,
-        "primary_threat": "thermal",
-        "drama_level": "LOW",
-        "lat": 15.0, "lon": 90.0,
-        "population_affected": 400000000
+        "ocha_coverage_ratio": 0.40,
     },
     "gulf_of_mexico": {
-        "name": "Gulf of Mexico",
-        "current_score": 6.2,
-        "days_to_threshold": 400,
-        "funding_gap": 6000000,
+        "name": "Gulf of Mexico", "lat": 25.0, "lon": -90.0, "population_affected": 15000000,
+        "current_score": 6.1,
+        "days_to_threshold": 365,
+        "funding_gap_usd": 7200000,
+        "committed_funding_usd": 800000,
         "primary_threat": "hypoxia",
+        "chlorophyll_anomaly": 4.2,
+        "hypoxia_risk": 0.58,
+        "primary_driver": "Chlorophyll bloom 4.2x seasonal baseline",
         "drama_level": "HIGH",
-        "lat": 25.0, "lon": -90.0,
-        "population_affected": 15000000
+        "ocha_coverage_ratio": 0.10,
+    },
+    "coral_triangle": {
+        "name": "Coral Triangle", "lat": 0.0, "lon": 120.0, "population_affected": 120000000,
+        "current_score": 7.8,
+        "days_to_threshold": 95,
+        "funding_gap_usd": 11000000,
+        "committed_funding_usd": 2200000,
+        "primary_threat": "thermal",
+        "sst_anomaly_current": 1.8,
+        "dhw_current": 6.4,
+        "bleaching_alert_level": 3,
+        "primary_driver": "SST Anomaly +1.8°C, DHW 6.4 and rising",
+        "drama_level": "CRITICAL",
+        "ocha_coverage_ratio": 0.17,
+    },
+    "baltic_sea": {
+        "name": "Baltic Sea", "lat": 57.0, "lon": 19.0, "population_affected": 1400000,
+        "current_score": 4.8,
+        "days_to_threshold": 730,
+        "funding_gap_usd": 4100000,
+        "committed_funding_usd": 3200000,
+        "primary_threat": "hypoxia",
+        "o2_current_ml_l": 3.8,
+        "hypoxia_risk": 0.42,
+        "primary_driver": "Persistent hypoxic zone — O2 3.8ml/L",
+        "drama_level": "MEDIUM",
+        "ocha_coverage_ratio": 0.43,
+    },
+    "bengal_bay": {
+        "name": "Bay of Bengal", "lat": 15.0, "lon": 90.0, "population_affected": 400000000,
+        "current_score": 5.9,
+        "days_to_threshold": 410,
+        "funding_gap_usd": 8800000,
+        "committed_funding_usd": 900000,
+        "primary_threat": "thermal",
+        "sst_anomaly_current": 1.4,
+        "primary_driver": "SST Anomaly +1.4°C, cyclone intensification risk",
+        "drama_level": "MEDIUM",
+        "ocha_coverage_ratio": 0.10,
     }
 }
 
@@ -100,9 +124,15 @@ def generate_schema(cursor):
             lon REAL,
             current_score REAL,
             days_to_threshold INTEGER,
-            funding_gap REAL,
+            funding_gap_usd REAL,
+            committed_funding_usd REAL,
             primary_threat TEXT,
-            alert_level TEXT,
+            drama_level TEXT,
+            primary_driver TEXT,
+            sst_anomaly_current REAL,
+            dhw_current REAL,
+            bleaching_alert_level INTEGER,
+            ocha_coverage_ratio REAL,
             population_affected INTEGER
         )""",
         """CREATE TABLE IF NOT EXISTS region_features (
@@ -157,10 +187,14 @@ def seed_regions(cursor):
     print("Seeding regions...")
     for rid, data in DEMO_REGIONS_CONFIG.items():
         cursor.execute(
-            "INSERT OR REPLACE INTO regions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (rid, data["name"], data["lat"], data["lon"], data["current_score"],
-             data["days_to_threshold"], data["funding_gap"], data["primary_threat"],
-             data["drama_level"], data["population_affected"])
+            "INSERT OR REPLACE INTO regions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                rid, data["name"], data["lat"], data["lon"], data["current_score"],
+                data["days_to_threshold"], data["funding_gap_usd"], data.get("committed_funding_usd", 0), 
+                data["primary_threat"], data["drama_level"], data.get("primary_driver", ""),
+                data.get("sst_anomaly_current", 0.0), data.get("dhw_current", 0.0), data.get("bleaching_alert_level", 0),
+                data.get("ocha_coverage_ratio", 0.0), data["population_affected"]
+            )
         )
 
 def seed_timeseries_data(cursor):

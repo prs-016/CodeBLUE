@@ -1,0 +1,13 @@
+[features]
+seeds = false
+skip-lint = false
+
+[programs.devnet]
+threshold_fund = "Fg6PaFpoGXkYsidMpWxTWqkZUNkqYt6M8oR9P4K6qS11"
+
+[provider]
+cluster = "devnet"
+wallet = "keypairs/threshold-devnet.json"
+
+[scripts]
+test = "echo \"No Anchor tests scaffolded yet\""
