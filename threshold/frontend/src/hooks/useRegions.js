@@ -1,12 +1,8 @@
 import { useMemo } from "react";
-import { getMockRegion, getMockTrajectory, mockRegions } from "./mockData";
 import { useApiResource } from "./useApiResource";
 
 function normalizeRegion(region) {
-  if (!region) {
-    return null;
-  }
-
+  if (!region) return null;
   const score = region.threshold_proximity_score ?? region.current_score ?? 0;
   return {
     ...region,
@@ -18,54 +14,39 @@ function normalizeRegion(region) {
     primary_driver:
       region.primary_driver ??
       (region.sst_anomaly ? `SST Anomaly +${region.sst_anomaly}°C` : "Composite stress acceleration"),
-    committed_funding_usd: region.committed_funding_usd ?? Math.max(0, (region.modeled_intervention_cost || 0) - (region.funding_gap || 0)),
+    committed_funding_usd:
+      region.committed_funding_usd ??
+      Math.max(0, (region.modeled_intervention_cost || 0) - (region.funding_gap || 0)),
   };
 }
 
 export function useRegions() {
   const state = useApiResource({
     endpoint: "/api/v1/regions",
-    fallbackData: mockRegions,
-    initialData: mockRegions,
     transform: (rows) => rows.map(normalizeRegion),
   });
-
-  return {
-    ...state,
-    regions: state.data ?? [],
-  };
+  return { ...state, regions: state.data ?? [] };
 }
 
 export function useRegion(regionId) {
-  const fallback = useMemo(() => normalizeRegion(getMockRegion(regionId)), [regionId]);
   const state = useApiResource({
     endpoint: regionId ? `/api/v1/regions/${regionId}` : null,
-    fallbackData: fallback,
-    initialData: fallback,
     enabled: Boolean(regionId),
     dependencies: [regionId],
     transform: normalizeRegion,
   });
-
-  return {
-    ...state,
-    region: state.data,
-  };
+  return { ...state, region: state.data };
 }
 
 export function useRegionTrajectory(regionId) {
-  const fallback = useMemo(() => getMockTrajectory(regionId), [regionId]);
   const state = useApiResource({
     endpoint: regionId ? `/api/v1/regions/${regionId}/trajectory` : null,
-    fallbackData: fallback,
-    initialData: fallback,
     enabled: Boolean(regionId),
     dependencies: [regionId],
   });
-
   return {
     ...state,
     trajectory: state.data?.trajectory ?? [],
-    daysToThreshold: state.data?.days_to_threshold ?? fallback.days_to_threshold,
+    daysToThreshold: state.data?.days_to_threshold ?? null,
   };
 }

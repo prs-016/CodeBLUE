@@ -43,5 +43,10 @@ class Settings(BaseSettings):
     orthogonal_api_key: str = ""
     google_maps_api_key: str = ""
 
+    snowflake_account: str = ""
+    snowflake_user: str = ""
+    snowflake_password: str = ""
+    snowflake_database: str = "THRESHOLD_DB"
+    snowflake_schema: str = "PUBLIC"
 
 settings = Settings()

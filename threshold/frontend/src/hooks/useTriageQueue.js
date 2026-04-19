@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { mockRegions } from "./mockData";
 import { useApiResource, buildQuery } from "./useApiResource";
 
 function normalizeTriageRegion(region) {
@@ -16,21 +15,10 @@ function normalizeTriageRegion(region) {
 
 export default function useTriageQueue(filters = {}) {
   const query = useMemo(() => buildQuery(filters), [filters]);
-  const fallbackData = useMemo(
-    () => mockRegions.map(normalizeTriageRegion).sort((a, b) => a.days_to_threshold - b.days_to_threshold),
-    []
-  );
-
   const state = useApiResource({
     endpoint: `/api/v1/triage${query}`,
-    fallbackData,
-    initialData: fallbackData,
     dependencies: [query],
     transform: (rows) => rows.map(normalizeTriageRegion),
   });
-
-  return {
-    ...state,
-    queue: state.data ?? [],
-  };
+  return { ...state, queue: state.data ?? [] };
 }

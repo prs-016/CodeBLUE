@@ -10,14 +10,23 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from config import settings
 
+def _get_engine():
+    if settings.snowflake_account and settings.snowflake_user:
+        try:
+            print("Sponsor Integration Active: Establishing dynamic connection to Snowflake Warehouse...")
+            snowflake_url = f"snowflake://{settings.snowflake_user}:{settings.snowflake_password}@{settings.snowflake_account}/{settings.snowflake_database}/{settings.snowflake_schema}"
+            return create_engine(snowflake_url, future=True)
+        except Exception as e:
+            print(f"Warning: Snowflake connection failed, falling back to SQLite. Error: {e}")
+            
+    print("Executing locally with SQLite proxy datastore.")
+    return create_engine(
+        settings.database_url,
+        connect_args={"check_same_thread": False} if settings.database_url.startswith("sqlite") else {},
+        future=True,
+    )
 
-engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False}
-    if settings.database_url.startswith("sqlite")
-    else {},
-    future=True,
-)
+engine = _get_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
 
 
@@ -286,6 +295,64 @@ ATTENTION_SEED = [
     ("coral_triangle", 7.8, 4.1),
     ("baltic_sea", 4.8, 3.0),
     ("bengal_bay", 5.9, 3.2),
+]
+
+SOLANA_TX_SEED = [
+    {
+        "tx_hash": "5KtPk3LbVqRdFn2Xwm8YePvhZJsNcU7oAiCdGqWxBHrT1yRmDsLpVoEf6jMnKa4",
+        "from_wallet": "Donor7xKpQ2mNvRsFtWxBzYcLnHaEiDgJoUk9bPqCdAm",
+        "to_wallet": "threshold-demo-program",
+        "amount_usdc": 25000.0,
+        "memo": "THRESHOLD FUND: GBR Tranche 1 — Reef restoration",
+        "round_id": "gbr-2026-q2",
+        "tranche": 1,
+        "timestamp": "2026-03-15T09:14:22Z",
+        "status": "confirmed",
+    },
+    {
+        "tx_hash": "3RnYwHqMbPdF7sLvKzXcNtAoEiGjUm2WxBrDfCvQpTs8kJeRhZaVgLnYoPqiDwMx",
+        "from_wallet": "Donor3mVbNxQwLsRfPkYzAoEiGjUdCvTh9WcXnBpDmJa",
+        "to_wallet": "threshold-demo-program",
+        "amount_usdc": 10000.0,
+        "memo": "THRESHOLD FUND: Coral Triangle Tranche 1 — Fisheries monitoring",
+        "round_id": "coral-triangle-2026-q2",
+        "tranche": 1,
+        "timestamp": "2026-03-22T14:37:55Z",
+        "status": "confirmed",
+    },
+    {
+        "tx_hash": "9QpZhFjKwNxBmLsYvRtDcAiEoGbUn4WkXeVgJdCqPrTs7mHaRfZoLnYoPqiDwKx",
+        "from_wallet": "Donor9nWxKpQ2mNvRsFtBzYcLnHaEiDgJoUk9bPqCdBm",
+        "to_wallet": "threshold-demo-program",
+        "amount_usdc": 50000.0,
+        "memo": "THRESHOLD FUND: GBR Tranche 2 — Emergency bleaching response",
+        "round_id": "gbr-2026-q2",
+        "tranche": 2,
+        "timestamp": "2026-04-01T11:08:43Z",
+        "status": "confirmed",
+    },
+    {
+        "tx_hash": "7MnBvCxPqRsFtWxAoEiGjUk2dYzLhDcNmJaKpZwHfTs6eRbQoLvYgPqiDwKxZn",
+        "from_wallet": "Donor2kVbNxQwLsRfPkYzAoEiGjUdCvTh9WcXnBpDmJa",
+        "to_wallet": "threshold-demo-program",
+        "amount_usdc": 15000.0,
+        "memo": "THRESHOLD FUND: Mekong Delta Tranche 1 — Water quality sensors",
+        "round_id": "gbr-2026-q2",
+        "tranche": 1,
+        "timestamp": "2026-04-08T16:22:11Z",
+        "status": "confirmed",
+    },
+    {
+        "tx_hash": "2LpYhEjNwMxAmKsZvRtBcAiDoGbUn5WkXeVgJdCqPrTs8mHaRfZoLnYoPqiDwKy",
+        "from_wallet": "Donor5pXbKwQmNvLsFtRzYcAnHaEiDgJoUk7bPqCdAm",
+        "to_wallet": "threshold-demo-program",
+        "amount_usdc": 7500.0,
+        "memo": "THRESHOLD FUND: Arabian Sea Tranche 1 — Dead zone mapping",
+        "round_id": "coral-triangle-2026-q2",
+        "tranche": 1,
+        "timestamp": "2026-04-14T08:55:30Z",
+        "status": "confirmed",
+    },
 ]
 
 
@@ -584,24 +651,22 @@ def seed_demo_data() -> None:
                 NEWS_SEED,
             )
 
-        feature_count = conn.execute(text("SELECT COUNT(*) FROM region_features")).scalar_one()
-        if feature_count == 0:
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO region_features (
-                        region_id, date, sst_anomaly, o2_current, chlorophyll_anomaly,
-                        co2_regional_ppm, nitrate_anomaly, threshold_proximity_score,
-                        scientific_event_flag, active_situation_reports
-                    ) VALUES (
-                        :region_id, :date, :sst_anomaly, :o2_current, :chlorophyll_anomaly,
-                        :co2_regional_ppm, :nitrate_anomaly, :threshold_proximity_score,
-                        :scientific_event_flag, :active_situation_reports
-                    )
-                    """
-                ),
-                list(_generate_region_features()),
-            )
+        conn.execute(
+            text(
+                """
+                INSERT OR REPLACE INTO region_features (
+                    region_id, date, sst_anomaly, o2_current, chlorophyll_anomaly,
+                    co2_regional_ppm, nitrate_anomaly, threshold_proximity_score,
+                    scientific_event_flag, active_situation_reports
+                ) VALUES (
+                    :region_id, :date, :sst_anomaly, :o2_current, :chlorophyll_anomaly,
+                    :co2_regional_ppm, :nitrate_anomaly, :threshold_proximity_score,
+                    :scientific_event_flag, :active_situation_reports
+                )
+                """
+            ),
+            list(_generate_region_features()),
+        )
 
         attention_count = conn.execute(text("SELECT COUNT(*) FROM media_attention")).scalar_one()
         if attention_count == 0:
@@ -626,33 +691,106 @@ def seed_demo_data() -> None:
                 ],
             )
 
+        solana_count = conn.execute(text("SELECT COUNT(*) FROM solana_transactions")).scalar_one()
+        if solana_count == 0:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO solana_transactions (
+                        tx_hash, from_wallet, to_wallet, amount_usdc, memo,
+                        round_id, tranche, timestamp, status
+                    ) VALUES (
+                        :tx_hash, :from_wallet, :to_wallet, :amount_usdc, :memo,
+                        :round_id, :tranche, :timestamp, :status
+                    )
+                    """
+                ),
+                SOLANA_TX_SEED,
+            )
+
         _upsert_app_meta(conn, "last_data_refresh", datetime.now(timezone.utc).isoformat())
 
 
 def _generate_region_features() -> Iterator[dict[str, Any]]:
+    """Generate 3 years of daily regional stress signals with realistic El Niño patterns."""
+    import math
+
     today = date.today()
+    # 3-year lookback (1095 days) — captures 2023 El Niño, warming trend, seasonality
+    total_days = 1095
+    start_date = today - timedelta(days=total_days - 1)
+
+    # El Niño events: start → peak month (1-indexed), intensity multiplier
+    EL_NINO_WINDOWS = [
+        (date(2023, 6, 1), date(2024, 3, 1), 1.0),   # 2023–24 moderate El Niño
+    ]
+    HIGH_ALERT_REGIONS = {"great_barrier_reef", "mekong_delta"}
+
     for region in REGION_SEED:
-        for day_offset in range(0, 90):
-            point_date = today - timedelta(days=89 - day_offset)
-            seasonal = (day_offset % 30) / 30.0
-            score = max(0.0, min(10.0, region["current_score"] - 1.0 + seasonal * 0.8))
+        base_score = region["current_score"]
+        region_id = region["id"]
+
+        for day_offset in range(total_days):
+            point_date = start_date + timedelta(days=day_offset)
+
+            # Fractional year position for seasonality (0→1 over calendar year)
+            day_of_year = point_date.timetuple().tm_yday
+            seasonal = math.sin(2 * math.pi * (day_of_year / 365.0 - 0.25))
+
+            # Long-term warming trend: +0.003 score/day across 3 years
+            trend = day_offset * 0.003 / total_days * base_score
+
+            # El Niño boost
+            el_nino_boost = 0.0
+            for el_start, el_end, intensity in EL_NINO_WINDOWS:
+                if el_start <= point_date <= el_end:
+                    # Gaussian peak around midpoint of event
+                    midpoint = el_start + (el_end - el_start) / 2
+                    days_from_mid = abs((point_date - midpoint).days)
+                    duration = (el_end - el_start).days / 2
+                    el_nino_boost = intensity * math.exp(-0.5 * (days_from_mid / max(duration, 1)) ** 2)
+                    break
+
+            # Build per-metric values
+            sst_base = base_score / 4.5
+            sst_anomaly = round(
+                sst_base + seasonal * 0.55 + trend * 0.4 + el_nino_boost * 0.8,
+                3,
+            )
+            o2_current = round(
+                max(1.2, 5.8 - (base_score / 2.0) - seasonal * 0.15 - el_nino_boost * 0.3),
+                3,
+            )
+            chlorophyll_anomaly = round(
+                max(0.1, 1.0 + seasonal * base_score / 4.0 + el_nino_boost * 0.5),
+                3,
+            )
+            co2_regional_ppm = round(418.0 + day_offset * (2.5 / 365), 3)  # ~2.5 ppm/yr rise
+            nitrate_anomaly = round(max(0.1, 0.3 + seasonal * 1.2 + el_nino_boost * 0.4), 3)
+
+            # Threshold proximity score: drives toward current_score with trend + events
+            score = max(
+                0.0,
+                min(
+                    10.0,
+                    base_score - 1.5 + trend + el_nino_boost * 1.2 + seasonal * 0.4,
+                ),
+            )
+
+            scientific_flag = 1 if (el_nino_boost > 0.5 or score > base_score) else 0
+            situation_reports = 2 if region_id in HIGH_ALERT_REGIONS else (1 if score > 6.0 else 0)
+
             yield {
-                "region_id": region["id"],
+                "region_id": region_id,
                 "date": point_date.isoformat(),
-                "sst_anomaly": round(
-                    (region["current_score"] / 4.5) + (seasonal - 0.5) * 0.4,
-                    3,
-                ),
-                "o2_current": round(
-                    max(1.2, 6.0 - (region["current_score"] / 2.2) - seasonal * 0.25),
-                    3,
-                ),
-                "chlorophyll_anomaly": round(1.0 + seasonal * region["current_score"] / 3.0, 3),
-                "co2_regional_ppm": round(418.0 + day_offset * 0.03, 3),
-                "nitrate_anomaly": round(0.3 + seasonal * 1.5, 3),
+                "sst_anomaly": sst_anomaly,
+                "o2_current": o2_current,
+                "chlorophyll_anomaly": chlorophyll_anomaly,
+                "co2_regional_ppm": co2_regional_ppm,
+                "nitrate_anomaly": nitrate_anomaly,
                 "threshold_proximity_score": round(score, 3),
-                "scientific_event_flag": 1 if day_offset > 70 else 0,
-                "active_situation_reports": 2 if region["id"] in {"great_barrier_reef", "mekong_delta"} else 0,
+                "scientific_event_flag": scientific_flag,
+                "active_situation_reports": situation_reports,
             }
 
 

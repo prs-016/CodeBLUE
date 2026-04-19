@@ -29,7 +29,16 @@ export default function RegionBrief({
   const score = Number(region?.current_score ?? region?.threshold_proximity_score ?? 0);
 
   if (!region) {
-    return null;
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-teal/30 border-t-teal-light" />
+          <p className="mt-4 text-sm uppercase tracking-[0.25em] text-grey-mid">
+            {loading ? "Syncing intelligence feed…" : "Region not found"}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
