@@ -37,4 +37,14 @@ export const api = {
   getCounterfactualEstimate: (regionId) => request(`/api/v1/counterfactual/estimate/${regionId}`),
   getTransactions: () => request("/api/v1/fund/transactions"),
   getTransparency: () => request("/api/v1/fund/transparency"),
+  riskQuick: (lat, lon) =>
+    request("/api/v1/risk-assessment/quick", {
+      method: "POST",
+      body: JSON.stringify({ lat, lon }),
+    }),
+  riskEnrich: (lat, lon) =>
+    request("/api/v1/risk-assessment/enrich", {
+      method: "POST",
+      body: JSON.stringify({ lat, lon }),
+    }),
 };

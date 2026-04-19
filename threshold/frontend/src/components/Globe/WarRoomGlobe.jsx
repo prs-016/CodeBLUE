@@ -1,16 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
-
 import { useNavigate } from "react-router-dom";
+import RiskCard from "../RiskCard/RiskCard";
+import { useRiskAssessment } from "../../hooks/useRiskAssessment";
 
 export default function WarRoomGlobe({ regions }) {
   const globeRef = useRef();
   const containerRef = useRef();
   const navigate = useNavigate();
   const [hoverD, setHoverD] = useState(null);
+  const { quick, enrich, loadingQuick, loadingEnrich, assess, clear } = useRiskAssessment();
 
   useEffect(() => {
     if (!containerRef.current) return;
-    // Dynamically import Globe inside the effect
     import("globe.gl").then((GlobePkg) => {
       const Globe = GlobePkg.default || GlobePkg;
 
@@ -21,29 +22,38 @@ export default function WarRoomGlobe({ regions }) {
         .atmosphereColor("#14BDAC")
         .atmosphereAltitude(0.15);
 
-      // Default point of view
       globe.pointOfView({ lat: 20, lng: 0, altitude: 2.5 });
-
-      // Controls
       globe.controls().autoRotate = true;
       globe.controls().autoRotateSpeed = 0.5;
+
+      // Click on empty globe space → trigger risk assessment pipeline
+      globe.onGlobeClick(({ lat, lng }) => {
+        globe.controls().autoRotate = false;
+        assess(lat, lng);
+      });
 
       globeRef.current = globe;
     }).catch(console.error);
 
-    // Cleanup
     return () => {
-      containerRef.current.innerHTML = '';
+      containerRef.current.innerHTML = "";
     };
   }, []);
 
-  // Update Data dynamically
+  // Separate effect so assess reference doesn't recreate the globe
+  useEffect(() => {
+    if (!globeRef.current) return;
+    globeRef.current.onGlobeClick(({ lat, lng }) => {
+      globeRef.current.controls().autoRotate = false;
+      assess(lat, lng);
+    });
+  }, [assess]);
+
   useEffect(() => {
     if (!globeRef.current || !regions || regions.length === 0) return;
     const globe = globeRef.current;
 
-    // Map regions into rings/polygons to show heat spots
-    const ringData = regions.map(r => ({
+    const ringData = regions.map((r) => ({
       lat: r.lat,
       lng: r.lon,
       maxR: Math.max(5, (r.threshold_proximity_score || 0) * 1.5),
@@ -51,17 +61,17 @@ export default function WarRoomGlobe({ regions }) {
       repeatPeriod: (r.threshold_proximity_score || 0) > 7 ? 600 : 1500,
       color: getColor(r.threshold_proximity_score || 0),
       label: r.name,
-      ...r
+      ...r,
     }));
 
     globe
       .ringsData(ringData)
-      .ringColor(d => d.color)
-      .ringMaxRadius(d => d.maxR)
-      .ringPropagationSpeed(d => d.propagationSpeed)
-      .ringRepeatPeriod(d => d.repeatPeriod)
+      .ringColor((d) => d.color)
+      .ringMaxRadius((d) => d.maxR)
+      .ringPropagationSpeed((d) => d.propagationSpeed)
+      .ringRepeatPeriod((d) => d.repeatPeriod)
       .onRingHover(setHoverD)
-      .onRingClick(d => navigate(`/region/${d.id}`));
+      .onRingClick((d) => navigate(`/region/${d.id}`));
   }, [regions, navigate]);
 
   function getColor(score, threat = "thermal") {
@@ -77,30 +87,47 @@ export default function WarRoomGlobe({ regions }) {
   return (
     <div className="w-full h-full relative pointer-events-auto">
       <div ref={containerRef} className="h-full w-full cursor-pointer" />
-      {/* Tooltip Overlay */}
+
+      {/* Existing region hover tooltip */}
       {hoverD && (
-        <div className="absolute pointer-events-none z-50 bg-navy/90 border border-grey-dark p-4 rounded shadow-2xl backdrop-blur-sm"
-             style={{ 
-                left: '50%', top: '50%', transform: 'translate(40px, -50%)', 
-                boxShadow: `0 0 20px ${getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0.5)}` 
-             }}>
+        <div
+          className="absolute pointer-events-none z-50 bg-navy/90 border border-grey-dark p-4 rounded shadow-2xl backdrop-blur-sm"
+          style={{
+            left: "50%",
+            top: "50%",
+            transform: "translate(40px, -50%)",
+            boxShadow: `0 0 20px ${getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0.5)}`,
+          }}
+        >
           <h3 className="text-lg font-bold text-white mb-1">{hoverD.name}</h3>
-          <div className="text-3xl font-mono mb-2" style={{ color: getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0) }}>
-            {hoverD.threshold_proximity_score.toFixed(1)} <span className="text-sm font-sans text-grey-mid">SCORE</span>
+          <div
+            className="text-3xl font-mono mb-2"
+            style={{ color: getColor(hoverD.threshold_proximity_score, hoverD.primary_threat)(0) }}
+          >
+            {hoverD.threshold_proximity_score.toFixed(1)}{" "}
+            <span className="text-sm font-sans text-grey-mid">SCORE</span>
           </div>
-          <div className="text-sm text-grey-mid">
-            T-{hoverD.days_to_threshold} Days to Threshold
-          </div>
-          <div className="mt-1 text-sm text-white">
-            {hoverD.primary_driver}
-          </div>
-          <div className="text-sm text-grey-mid mt-1">
-             Gap: ${(hoverD.funding_gap / 1000000).toFixed(1)}M
-          </div>
+          <div className="text-sm text-grey-mid">T-{hoverD.days_to_threshold} Days to Threshold</div>
+          <div className="mt-1 text-sm text-white">{hoverD.primary_driver}</div>
+          <div className="text-sm text-grey-mid mt-1">Gap: ${(hoverD.funding_gap / 1000000).toFixed(1)}M</div>
           <div className="text-teal-light text-xs font-bold mt-3 uppercase tracking-widest">
             Click to View Brief →
           </div>
         </div>
+      )}
+
+      {/* Risk assessment card — shown on arbitrary globe click */}
+      {(loadingQuick || quick) && (
+        <RiskCard
+          quick={quick}
+          enrich={enrich}
+          loadingQuick={loadingQuick}
+          loadingEnrich={loadingEnrich}
+          onClose={() => {
+            clear();
+            if (globeRef.current) globeRef.current.controls().autoRotate = true;
+          }}
+        />
       )}
     </div>
   );
