@@ -62,7 +62,7 @@ export default function StressSignalDashboard({ signals = [], regionName = "Regi
           <div className="text-xs uppercase tracking-[0.28em] text-grey-mid">Stress signals</div>
           <h3 className="mt-2 text-2xl font-semibold text-white">{regionName} historical dashboard</h3>
           <p className="mt-1 text-sm text-grey-mid">
-            California Current charts can extend back to 1949. This panel will display from the earliest available record, with 2016-style spikes still legible.
+            Displays from the earliest available record across the loaded time range.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -96,12 +96,6 @@ export default function StressSignalDashboard({ signals = [], regionName = "Regi
               />
             ))}
             <path d={path} fill="none" stroke={metric.color} strokeWidth="4" strokeLinecap="round" />
-            {points.length > 0 && (
-              <>
-                <line x1={width * 0.82} y1={padding} x2={width * 0.82} y2={height - padding} stroke="rgba(255,255,255,0.16)" strokeDasharray="6 8" />
-                <text x={width * 0.82 + 8} y={padding + 16} fill="#F1C40F" fontSize="12">2016 El Nino marker</text>
-              </>
-            )}
             <text x={padding} y={height - 8} fill="#BDC3C7" fontSize="12">{points[0]?.date || "start"}</text>
             <text x={width - padding} y={height - 8} fill="#BDC3C7" fontSize="12" textAnchor="end">{points[points.length - 1]?.date || "now"}</text>
           </svg>

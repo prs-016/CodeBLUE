@@ -52,11 +52,22 @@ class DemoModelRegistry:
     def load(self) -> None:
         if _ML_AVAILABLE:
             try:
+                import pathlib
+                # Look for saved model weights next to the model source files
+                _model_dir = pathlib.Path(os.path.abspath(__file__)).parents[2] / "ml" / "models"
+                _saved = _model_dir / "tipping_point_classifier.json"
+
                 self._classifier = _TippingPointClassifier()
-                self._classifier._prime_defaults()
+                if _saved.exists():
+                    self._classifier.load(_saved)
+                    logger.info("TippingPointClassifier loaded from %s", _saved)
+                else:
+                    self._classifier._prime_defaults()
+                    logger.info("TippingPointClassifier using heuristic defaults (no saved weights)")
+
                 self._forecaster = _DaysToThresholdForecaster()
                 self._estimator = _CounterfactualCostEstimator()
-                logger.info("ML model instances created and ready.")
+                logger.info("ML model instances ready.")
             except Exception as exc:
                 logger.warning("Failed to instantiate ML models: %s", exc)
                 self._classifier = None

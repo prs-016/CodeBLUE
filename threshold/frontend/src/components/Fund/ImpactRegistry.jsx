@@ -7,15 +7,7 @@ function formatMoney(value) {
   return `$${value}`;
 }
 
-const GIVEWELL_METRICS = [
-  { org: "Coral Restoration Foundation", metric: "0.046 hectares of reef protected per $1", ein: "26-1737731" },
-  { org: "WorldFish Center", metric: "$1 sustains 12.4 fishing-family livelihoods for 1 year", ein: "RW3W-001" },
-  { org: "WWF Ocean Program", metric: "$1 = 0.31 km² of marine protected area monitored", ein: "52-1693387" },
-  { org: "The Nature Conservancy", metric: "$1 prevents $8.20 in downstream flood damage", ein: "53-0242652" },
-  { org: "Ocean Conservancy", metric: "$1 removes 2.1 kg of ocean plastic from Gulf current", ein: "23-7245152" },
-];
-
-export default function ImpactRegistry({ impact = [], transactions = [] }) {
+export default function ImpactRegistry({ impact = [], transactions = [], charities = [] }) {
   return (
     <section className="rounded-[28px] border border-grey-dark/80 bg-white/[0.03] p-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -60,18 +52,20 @@ export default function ImpactRegistry({ impact = [], transactions = [] }) {
         </div>
       </div>
 
-      <div className="mt-8">
-        <div className="text-xs uppercase tracking-[0.28em] text-teal-light">GiveWell Return Multiples</div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {GIVEWELL_METRICS.map((m) => (
-            <div key={m.ein} className="rounded-[20px] border border-teal/30 bg-teal/5 p-4">
-              <div className="text-sm font-semibold text-white">{m.org}</div>
-              <div className="mt-2 text-sm text-grey-light">{m.metric}</div>
-              <div className="mt-2 font-mono text-xs text-grey-mid">EIN {m.ein}</div>
-            </div>
-          ))}
+      {charities.length > 0 && (
+        <div className="mt-8">
+          <div className="text-xs uppercase tracking-[0.28em] text-teal-light">Verified Partners</div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {charities.map((c) => (
+              <div key={c.ein} className="rounded-[20px] border border-teal/30 bg-teal/5 p-4">
+                <div className="text-sm font-semibold text-white">{c.name}</div>
+                <div className="mt-2 text-sm text-grey-light">Score: {c.overall_score}</div>
+                <div className="mt-2 font-mono text-xs text-grey-mid">EIN {c.ein}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

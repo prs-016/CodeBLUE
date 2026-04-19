@@ -29,7 +29,7 @@ export default function TriageQueue() {
             <option>Thermal</option>
             <option>Hypoxia</option>
           </select>
-          <div className="text-grey-mid py-1 px-2">20 Rows</div>
+          <div className="text-grey-mid py-1 px-2">{regions.length} Regions</div>
         </div>
         <button className="bg-teal/20 text-teal-light px-4 py-1 rounded hover:bg-teal/40 transition">
           Export CSV

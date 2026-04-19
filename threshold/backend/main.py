@@ -1,15 +1,39 @@
 from __future__ import annotations
 
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from database import SessionLocal, get_last_data_refresh, init_db
+from database import SessionLocal, engine, get_last_data_refresh, init_db, _upsert_app_meta
 from models.region import HealthResponse
 from routers import charities, counterfactual, fund, funding, news, regions, risk_assessment, triage
+from routers import admin
 from services.ml_service import model_registry
+
+logger = logging.getLogger(__name__)
+
+
+async def _startup_pipeline():
+    """Run the live data pipeline once at startup in a background thread."""
+    try:
+        from datetime import datetime, timezone
+        import concurrent.futures
+        from data_pipeline import run_pipeline
+
+        loop = asyncio.get_event_loop()
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            result = await loop.run_in_executor(pool, lambda: run_pipeline(engine))
+
+        with engine.begin() as conn:
+            _upsert_app_meta(conn, "last_data_refresh", datetime.now(timezone.utc).isoformat())
+
+        logger.info("Startup pipeline finished: %s", result)
+    except Exception as exc:
+        logger.warning("Startup pipeline failed (non-fatal): %s", exc)
 
 
 @asynccontextmanager
@@ -19,6 +43,8 @@ async def lifespan(app: FastAPI):
     with SessionLocal() as db:
         app.state.last_data_refresh = get_last_data_refresh(db)
     app.state.models_loaded = model_registry.loaded
+    # Fire pipeline in background — don't block startup
+    asyncio.create_task(_startup_pipeline())
     yield
 
 
@@ -75,3 +101,4 @@ app.include_router(
     prefix=f"{settings.api_v1_str}/risk-assessment",
     tags=["risk-assessment"],
 )
+app.include_router(admin.router, prefix=f"{settings.api_v1_str}/admin", tags=["admin"])

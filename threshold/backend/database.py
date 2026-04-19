@@ -5,7 +5,7 @@ import logging
 from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Iterator
 import urllib.parse
 
@@ -13,16 +13,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from config import settings
-from seed_data import (
-    REGION_SEED,
-    FUNDING_ROUND_SEED,
-    COUNTERFACTUAL_CASE_SEED,
-    CHARITY_SEED,
-    NEWS_SEED,
-    ATTENTION_SEED,
-    SOLANA_TX_SEED,
-    _generate_region_features,
-)
+
 
 def _get_engine():
     if settings.snowflake_account and settings.snowflake_user:
@@ -31,19 +22,19 @@ def _get_engine():
             safe_password = urllib.parse.quote_plus(settings.snowflake_password)
             snowflake_url = f"snowflake://{settings.snowflake_user}:{safe_password}@{settings.snowflake_account}/{settings.snowflake_database}/{settings.snowflake_schema}"
             eng = create_engine(snowflake_url, future=True)
-            # Force connection to test credentials immediately
             with eng.connect() as test_conn:
                 pass
             return eng
         except Exception as e:
             print(f"Warning: Snowflake connection failed, falling back to SQLite. Error: {e}")
-            
+
     print("Executing locally with SQLite proxy datastore.")
     return create_engine(
         settings.database_url,
         connect_args={"check_same_thread": False} if settings.database_url.startswith("sqlite") else {},
         future=True,
     )
+
 
 engine = _get_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
@@ -253,163 +244,6 @@ def init_db() -> None:
         _ensure_column(conn, "charity_registry", "accountability_score", "REAL")
         _ensure_column(conn, "charity_registry", "program_expense_ratio", "REAL")
         _ensure_column(conn, "charity_registry", "active_regions", "TEXT")
-
-    seed_demo_data()
-
-
-def seed_demo_data() -> None:
-    with engine.begin() as conn:
-        region_count = conn.execute(text("SELECT COUNT(*) FROM regions")).scalar_one()
-        if region_count == 0:
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO regions (
-                        id, name, lat, lon, current_score, days_to_threshold, funding_gap,
-                        primary_threat, alert_level, population_affected, primary_driver, trend_summary
-                    ) VALUES (
-                        :id, :name, :lat, :lon, :current_score, :days_to_threshold, :funding_gap,
-                        :primary_threat, :alert_level, :population_affected, :primary_driver, :trend_summary
-                    )
-                    """
-                ),
-                REGION_SEED,
-            )
-
-        round_count = conn.execute(text("SELECT COUNT(*) FROM funding_rounds")).scalar_one()
-        if round_count == 0:
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO funding_rounds (
-                        id, region_id, title, target_amount, raised_amount, status, deadline,
-                        cost_multiplier, partner_ein
-                    ) VALUES (
-                        :id, :region_id, :title, :target_amount, :raised_amount, :status, :deadline,
-                        :cost_multiplier, :partner_ein
-                    )
-                    """
-                ),
-                FUNDING_ROUND_SEED,
-            )
-
-        case_count = conn.execute(text("SELECT COUNT(*) FROM counterfactual_cases")).scalar_one()
-        if case_count == 0:
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO counterfactual_cases (
-                        case_id, region_id, event_name, year_crossed, prevention_cost,
-                        recovery_cost, cost_multiplier, early_warning_date, threshold_crossed_date, data_source
-                    ) VALUES (
-                        :case_id, :region_id, :event_name, :year_crossed, :prevention_cost,
-                        :recovery_cost, :cost_multiplier, :early_warning_date, :threshold_crossed_date, :data_source
-                    )
-                    """
-                ),
-                COUNTERFACTUAL_CASE_SEED,
-            )
-
-        charity_count = conn.execute(text("SELECT COUNT(*) FROM charity_registry")).scalar_one()
-        if charity_count == 0:
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO charity_registry (
-                        ein, region_id, name, overall_score, financial_score,
-                        accountability_score, program_expense_ratio, active_regions
-                    ) VALUES (
-                        :ein, :region_id, :name, :overall_score, :financial_score,
-                        :accountability_score, :program_expense_ratio, :active_regions
-                    )
-                    """
-                ),
-                CHARITY_SEED,
-            )
-
-        news_count = conn.execute(text("SELECT COUNT(*) FROM news_reports")).scalar_one()
-        if news_count == 0:
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO news_reports (
-                        id, region_id, title, source_type, source_org, date,
-                        body_summary, url, urgency_score, disaster_type
-                    ) VALUES (
-                        :id, :region_id, :title, :source_type, :source_org, :date,
-                        :body_summary, :url, :urgency_score, :disaster_type
-                    )
-                    """
-                ),
-                NEWS_SEED,
-            )
-
-        feature_count = conn.execute(text("SELECT COUNT(*) FROM region_features")).scalar_one()
-        if feature_count == 0:
-            # Pipeline hasn't run yet — seed with synthetic 3-year El Niño data
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO region_features (
-                        region_id, date, sst_anomaly, o2_current, chlorophyll_anomaly,
-                        co2_regional_ppm, nitrate_anomaly, threshold_proximity_score,
-                        scientific_event_flag, active_situation_reports
-                    ) VALUES (
-                        :region_id, :date, :sst_anomaly, :o2_current, :chlorophyll_anomaly,
-                        :co2_regional_ppm, :nitrate_anomaly, :threshold_proximity_score,
-                        :scientific_event_flag, :active_situation_reports
-                    )
-                    """
-                ),
-                list(_generate_region_features()),
-            )
-        else:
-            logger.info(
-                "region_features already has %d rows (pipeline data) — skipping synthetic seed",
-                feature_count,
-            )
-
-        attention_count = conn.execute(text("SELECT COUNT(*) FROM media_attention")).scalar_one()
-        if attention_count == 0:
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO media_attention (
-                        region_id, severity_score, normalized_attention_score, attention_gap
-                    ) VALUES (
-                        :region_id, :severity_score, :normalized_attention_score, :attention_gap
-                    )
-                    """
-                ),
-                [
-                    {
-                        "region_id": region_id,
-                        "severity_score": severity,
-                        "normalized_attention_score": attention,
-                        "attention_gap": round(severity - attention, 2),
-                    }
-                    for region_id, severity, attention in ATTENTION_SEED
-                ],
-            )
-
-        solana_count = conn.execute(text("SELECT COUNT(*) FROM solana_transactions")).scalar_one()
-        if solana_count == 0:
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO solana_transactions (
-                        tx_hash, from_wallet, to_wallet, amount_usdc, memo,
-                        round_id, tranche, timestamp, status
-                    ) VALUES (
-                        :tx_hash, :from_wallet, :to_wallet, :amount_usdc, :memo,
-                        :round_id, :tranche, :timestamp, :status
-                    )
-                    """
-                ),
-                SOLANA_TX_SEED,
-            )
-
-        _upsert_app_meta(conn, "last_data_refresh", datetime.now(timezone.utc).isoformat())
 
 
 def _upsert_app_meta(conn: Any, key: str, value: str) -> None:
